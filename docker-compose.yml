@@ -33,15 +33,15 @@ services:
     restart: unless-stopped
 
   # Frontend
-  #TODO: meet with Jeffrey to talk about frontend dev before setting up container
-  frontend:
-    build: ./frontend
-    ports:
-      - "3000:3000"
-    environment:
-      - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
-    depends_on:
-      - backend
+  # TODO: Uncomment once Jeffrey adds Dockerfile to frontend/
+  # frontend:
+  #   build: ./frontend
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
+  #   depends_on:
+  #     - backend
 
 volumes:
   postgres_data:
