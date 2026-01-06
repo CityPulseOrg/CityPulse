@@ -1,0 +1,20 @@
+name: Docker Image CI
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+
+jobs:
+#Later add test, lint, security-scan
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t citypulse:${{ github.sha }} -f backend/Dockerfile backend
+
