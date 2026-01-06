@@ -1,0 +1,47 @@
+version: "3.8"
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-citypulse}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-citypulse}
+      POSTGRES_DB: ${POSTGRES_DB:-citypulse}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-citypulse}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI Backend
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-citypulse}:${POSTGRES_PASSWORD:-citypulse}@db:5432/${POSTGRES_DB:-citypulse}
+      - BACKBOARD_API_KEY=${BACKBOARD_API_KEY}
+      - BACKBOARD_WORKFLOW_ID=${BACKBOARD_WORKFLOW_ID}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Frontend
+  #TODO: meet with Jeffrey to talk about frontend dev before setting up container
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

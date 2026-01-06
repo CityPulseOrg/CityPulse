@@ -1,1 +1,83 @@
 # CityPulse
+
+AI-powered civic issue reporting system.
+
+## Quick Start
+
+```bash
+# 1. Copy environment file
+cp .env.example .env
+
+# 2. Edit .env and add your Backboard API credentials
+
+# 3. Run everything
+docker compose up --build
+```
+
+## Docker Commands
+
+```bash
+# Start all services (with build)
+docker compose up --build
+
+# Start in background (detached mode)
+docker compose up -d --build
+
+# Stop all services
+docker compose down
+
+# Stop and remove volumes (wipes database)
+docker compose down -v
+
+# View logs
+docker compose logs
+
+# View logs for specific service
+docker compose logs backend
+docker compose logs db
+
+# Follow logs in real-time
+docker compose logs -f
+
+# Restart a specific service
+docker compose restart backend
+
+# Rebuild a specific service
+docker compose up --build backend
+
+# Check running containers
+docker compose ps
+```
+
+## Services
+
+| Service  | URL                          |
+|----------|------------------------------|
+| Frontend | http://localhost:3000        |
+| Backend  | http://localhost:8000        |
+| API Docs | http://localhost:8000/docs   |
+| Health   | http://localhost:8000/health |
+
+## Architecture
+
+```
+Citizens -> Frontend -> Backend API -> Backboard AI Workflow
+                            |
+                         PostgreSQL
+```
+
+- **Frontend**: Web UI for submitting reports
+- **Backend**: FastAPI REST API
+- **Database**: PostgreSQL for storing reports
+- **AI**: Backboard workflow handles classification, severity, and email drafting
+
+## Environment Variables
+
+| Variable              | Description                    |
+|-----------------------|--------------------------------|
+| POSTGRES_USER         | Database username              |
+| POSTGRES_PASSWORD     | Database password              |
+| POSTGRES_DB           | Database name                  |
+| BACKBOARD_API_KEY     | Backboard API key              |
+| BACKBOARD_WORKFLOW_ID | Backboard workflow ID          |
+| VITE_API_URL          | Backend URL for frontend       |
