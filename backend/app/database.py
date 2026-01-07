@@ -18,6 +18,22 @@ DOCS:
 - UGly ahh sqlalchemy doc: https://docs.sqlalchemy.org/en/20/tutorial/index.html 
 - FastAPI + SQLAlchemy: https://fastapi.tiangolo.com/tutorial/sql-databases/
 ================================================================================
-"""
-
 # Implement database setup here
+"""
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
+
+from app.config import get_settings
+
+engine = create_engine(get_settings().database_url)
+SessionLocal = sessionmaker(bind=engine)
+Base = declarative_base()
+
+
+def get_db():
+    """FastAPI dependency for database sessions."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
