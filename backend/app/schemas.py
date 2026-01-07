@@ -8,12 +8,13 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
 
+#TODO: Verify if need to create another class for status update (note de Zak)
 class Report(BaseModel):
     title: str
     description: str
     address: str
     city: str
-    status: str = "New"                   #TODO: Verify if need to create another class for status update
+    status: str = "New"
     latitude: Optional[float] = None
     longitude: Optional[float] = None
 
@@ -28,7 +29,7 @@ class ReportInDB(Report):
     creationTime: datetime
 
     class Config:
-        orn_mode = True
+        orm_mode = True
 
 class ReportEvent(BaseModel):
     eventType: str
@@ -40,8 +41,9 @@ class ReportEventInDB(ReportEvent):
     creationTime: datetime
 
     class Config:
-        orn_mode = True
+        orm_mode = True
 
+#TODO: Make sure that the type "list" is okay and verify if it should be replaced by "List" (note de Zak)
 class ReportEventList(ReportInDB):
     events: list[ReportEventInDB] = []
 
