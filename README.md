@@ -71,18 +71,6 @@ Citizens -> Frontend -> Backend API -> Backboard AI Workflow
 - **Database**: PostgreSQL for storing reports
 - **AI**: Backboard workflow handles classification, severity, and email drafting
 
-## API Endpoints
-
-| Method | Endpoint           | Description         |
-|--------|--------------------|---------------------|
-| GET    | `/`                | API info            |
-| GET    | `/health`          | Health check        |
-| POST   | `/reports`         | Create a report     |
-| GET    | `/reports`         | List all reports    |
-| GET    | `/reports/{id}`    | Get a single report |
-| PUT    | `/reports/{id}`    | Update a report     |
-| DELETE | `/reports/{id}`    | Delete a report     |
-
 ## Environment Variables
 
 | Variable              | Description                    |
