@@ -26,6 +26,7 @@ DOCS: use the Fast APi documentation: https://fastapi.tiangolo.com/tutorial/firs
 ================================================================================
 """
 
+import uuid
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -40,7 +41,6 @@ app.add_middleware(
 
 #TODO: In-memory store for now (swap for DB once models are ready)
 reports_db: dict = {}
-report_counter = 0
 
 
 @app.get("/health")
@@ -60,14 +60,13 @@ def create_report(
     description: str,
     address: str,
     city: str,
-    latitude: float = None,
-    longitude: float = None,
+    latitude: float | None = None,
+    longitude: float | None = None,
 ):
     """Create a new report."""
-    global report_counter
-    report_counter += 1
+    report_id = str(uuid.uuid4())
     report = {
-        "id": report_counter,
+        "id": report_id,
         "title": title,
         "description": description,
         "address": address,
@@ -76,7 +75,7 @@ def create_report(
         "longitude": longitude,
         "status": "open",
     }
-    reports_db[report_counter] = report
+    reports_db[report_id] = report
     return report
 
 
@@ -87,7 +86,7 @@ def list_reports():
 
 
 @app.get("/reports/{report_id}")
-def get_report(report_id: int):
+def get_report(report_id: str):
     """Get a single report by ID."""
     if report_id not in reports_db:
         raise HTTPException(status_code=404, detail="Report not found")
@@ -95,7 +94,7 @@ def get_report(report_id: int):
 
 
 @app.put("/reports/{report_id}")
-def update_report(report_id: int, title: str = None, description: str = None, status: str = None):
+def update_report(report_id: str, title: str | None = None, description: str | None = None, status: str | None = None):
     """Update a report."""
     if report_id not in reports_db:
         raise HTTPException(status_code=404, detail="Report not found")
@@ -110,7 +109,7 @@ def update_report(report_id: int, title: str = None, description: str = None, st
 
 
 @app.delete("/reports/{report_id}")
-def delete_report(report_id: int):
+def delete_report(report_id: str):
     """Delete a report."""
     if report_id not in reports_db:
         raise HTTPException(status_code=404, detail="Report not found")
