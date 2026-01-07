@@ -10,6 +10,7 @@ from typing import Optional, List
 
 #TODO: Verify if need to create another class for status update (note de Zak)
 class Report(BaseModel):
+    id: int
     title: str
     description: str
     address: str
@@ -19,7 +20,6 @@ class Report(BaseModel):
     longitude: Optional[float] = None
 
 class ReportInDB(Report):
-    id: int
     threadId: Optional[str] = None
     category: Optional[str] = None
     severity: Optional[str] = None

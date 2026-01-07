@@ -27,10 +27,13 @@ DOCS: use the Fast APi documentation: https://fastapi.tiangolo.com/tutorial/firs
 """
 
 import uuid
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Form, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from typing import Optional
+from .schemas import *
 
 app = FastAPI(title="CityPulse API", version="1.0.0")
+
 #TODO: will need to change origins, method and headers for prod
 app.add_middleware(
     CORSMiddleware,
@@ -56,25 +59,34 @@ def root():
 
 @app.post("/reports")
 def create_report(
-    title: str,
-    description: str,
-    address: str,
-    city: str,
-    latitude: float | None = None,
-    longitude: float | None = None,
+    title: str = Form(required=True),
+    description: str = Form(required=True),
+    address: str = Form(required=True),
+    city: str = Form(required=True),
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None,
+    issueImage: UploadFile = File(required=True),
 ):
     """Create a new report."""
-    report_id = str(uuid.uuid4())
-    report = {
-        "id": report_id,
-        "title": title,
-        "description": description,
-        "address": address,
-        "city": city,
-        "latitude": latitude,
-        "longitude": longitude,
-        "status": "open",
-    }
+    reportId = str(uuid.uuid4())
+
+    threadId
+
+    report = Report(
+        id = reportId,
+        title = title,
+        description = description,
+        address = address,
+        city = city,
+        status = "New",
+        latitude = latitude,
+        longitude = longitude,
+    )
+
+    databasesReport = ReportInDB(
+
+    )
+
     reports_db[report_id] = report
     return report
 
