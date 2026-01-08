@@ -15,14 +15,15 @@ def create_assistant():
                   },
                   json={
                       "name": "CPAssistant",
-                      "description": ("Analyzes civic issues reported by citizens and defines report"
+                      "description": ("Analyzes civic issues reported by citizens and defines report "
                                       "field for usage by city staff"),
                       "tools": [
                           {
                               "type": "function",
                               "function": {
                                   "name": "analyze_report",
-                                  "description": "",
+                                  "description": ("Construct the finalized report object with all the necessary fields "
+                                                  "before it gets added to the database"),
                                   "parameters": {
                                       "type": "object",
                                       "properties": {
@@ -40,7 +41,7 @@ def create_assistant():
                                                   "unplowed_area",
                                                   "icy_street",
                                                   "icy_sidewalk",
-                                                  "malfunctioning_waterfountain"
+                                                  "malfunctioning_waterfountain",
                                                   "other"
                                               ],
                                           },
@@ -92,15 +93,15 @@ def create_assistant():
                   }
                   )
 
-    if not response.ok:
-        response = response.json()
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as e:
         print("Sorry, there was an error creating the assistant: ")
-        print(response)
+        print(response.text)
         return
-    else:
-        response = response.json()
-        print("CPAssistant created successfully")
-        assistantId = response.get("assistant_id")
-        print("Assistant ID: " + assistantId)
 
-def run_ai_workflow():
+    response = response.json()
+    print("CPAssistant created successfully")
+    assistantId = response.get("assistant_id")
+    if assistantId:
+        print("Assistant ID: " + assistantId)

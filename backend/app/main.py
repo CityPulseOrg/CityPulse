@@ -69,9 +69,6 @@ def create_report(
 ):
     """Create a new report."""
     reportId = str(uuid.uuid4())
-
-    threadId
-
     report = Report(
         id = reportId,
         title = title,
@@ -83,11 +80,7 @@ def create_report(
         longitude = longitude,
     )
 
-    databasesReport = ReportInDB(
-
-    )
-
-    reports_db[report_id] = report
+    reports_db[reportId] = report
     return report
 
 
