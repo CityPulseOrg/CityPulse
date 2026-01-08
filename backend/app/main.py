@@ -25,12 +25,19 @@ EXAMPLE MINIMAL SETUP:
 DOCS: use the Fast APi documentation: https://fastapi.tiangolo.com/tutorial/first-steps/
 ================================================================================
 """
-
-import uuid
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+
+from app.database import engine, Base, get_db
+from app import models, crud
+from app.schemas import IssueCreate, IssueDB
+
 
 app = FastAPI(title="CityPulse API", version="1.0.0")
+Base.metadata.create_all(bind=engine)
+
 #TODO: will need to change origins, method and headers for prod
 app.add_middleware(
     CORSMiddleware,
@@ -39,13 +46,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-#TODO: In-memory store for now (swap for DB once models are ready)
-reports_db: dict = {}
-
 
 @app.get("/health")
-def health():
-    """Health check endpoint - required for Docker."""
+def health(db: Session = Depends(get_db)):
+    db.execute(text("SELECT 1"))
     return {"status": "healthy", "service": "citypulse-backend"}
 
 
@@ -54,64 +58,21 @@ def root():
     return {"message": "CityPulse API", "docs": "/docs"}
 
 
-@app.post("/reports")
-def create_report(
-    title: str,
-    description: str,
-    address: str,
-    city: str,
-    latitude: float | None = None,
-    longitude: float | None = None,
-):
-    """Create a new report."""
-    report_id = str(uuid.uuid4())
-    report = {
-        "id": report_id,
-        "title": title,
-        "description": description,
-        "address": address,
-        "city": city,
-        "latitude": latitude,
-        "longitude": longitude,
-        "status": "open",
-    }
-    reports_db[report_id] = report
-    return report
+@app.post("/v1/issues", response_model=IssueDB)
+def create_issue(payload: IssueCreate, db: Session = Depends(get_db)):
+    raw_text = f"{payload.title}\n{payload.description}\n{payload.address}, {payload.city}"
+    return crud.create_issue(db, raw_text=raw_text)
 
 
-@app.get("/reports")
-def list_reports():
-    """List all reports."""
-    return list(reports_db.values())
+
+@app.get("/v1/issues", response_model=list[IssueDB])
+def list_issues(db: Session = Depends(get_db)):
+    return crud.get_issues(db)
 
 
-@app.get("/reports/{report_id}")
-def get_report(report_id: str):
-    """Get a single report by ID."""
-    if report_id not in reports_db:
-        raise HTTPException(status_code=404, detail="Report not found")
-    return reports_db[report_id]
-
-
-@app.put("/reports/{report_id}")
-def update_report(report_id: str, title: str | None = None, description: str | None = None, status: str | None = None):
-    """Update a report."""
-    if report_id not in reports_db:
-        raise HTTPException(status_code=404, detail="Report not found")
-    report = reports_db[report_id]
-    if title:
-        report["title"] = title
-    if description:
-        report["description"] = description
-    if status:
-        report["status"] = status
-    return report
-
-
-@app.delete("/reports/{report_id}")
-def delete_report(report_id: str):
-    """Delete a report."""
-    if report_id not in reports_db:
-        raise HTTPException(status_code=404, detail="Report not found")
-    del reports_db[report_id]
-    return {"detail": "Report deleted"}
+@app.get("/v1/issues/{issue_id}", response_model=IssueDB)
+def get_issue(issue_id: str, db: Session = Depends(get_db)):
+    issue = crud.get_issue(db, issue_id)
+    if not issue:
+        raise HTTPException(status_code=404, detail="Issue not found")
+    return issue
