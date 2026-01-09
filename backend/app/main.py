@@ -25,18 +25,16 @@ EXAMPLE MINIMAL SETUP:
 DOCS: use the Fast APi documentation: https://fastapi.tiangolo.com/tutorial/first-steps/
 ================================================================================
 """
-from fastapi import FastAPI, HTTPException, Depends
+
+import uuid
+from fastapi import FastAPI, HTTPException, Form, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from sqlalchemy import text
-
-from app.database import engine, Base, get_db
-from app import models, crud
-from app.schemas import IssueCreate, IssueDB
-
+from typing import Optional, List
+from ai_workflow.workflow import *
+from crud import *
+from schemas import *
 
 app = FastAPI(title="CityPulse API", version="1.0.0")
-Base.metadata.create_all(bind=engine)
 
 #TODO: will need to change origins, method and headers for prod
 app.add_middleware(
@@ -46,10 +44,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+#TODO: In-memory store for now (swap for DB once models are ready)
+reportsDb: dict = {}
+
 
 @app.get("/health")
-def health(db: Session = Depends(get_db)):
-    db.execute(text("SELECT 1"))
+def health():
+    """Health check endpoint - required for Docker."""
     return {"status": "healthy", "service": "citypulse-backend"}
 
 
@@ -58,21 +59,86 @@ def root():
     return {"message": "CityPulse API", "docs": "/docs"}
 
 
-@app.post("/v1/issues", response_model=IssueDB)
-def create_issue(payload: IssueCreate, db: Session = Depends(get_db)):
-    raw_text = f"{payload.title}\n{payload.description}\n{payload.address}, {payload.city}"
-    return crud.create_issue(db, raw_text=raw_text)
+@app.post("/reports")
+def create_report(
+    title: str = Form(...),
+    description: str = Form(...),
+    address: str = Form(...),
+    city: str = Form(...),
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None,
+    issueImages: List[UploadFile] = File(...),
+):
+    """Create a new report."""
+    userReport = Report(
+        title=title,
+        description=description,
+        address=address,
+        city=city,
+        latitude=latitude,
+        longitude=longitude,
+    )
+
+    reportId = str(uuid.uuid4())
+    threadId, creationTime, aiResponse = run_backboard_ai(description=description,
+                                                          imageFiles=issueImages)
+    report = crud.create_report(db=reportsDb,
+                               userReport,
+                               aiResponse,
+                               reportId,
+                               threadId,
+                               creationTime)
+
+    return report
+
+
+@app.get("/reports")
+def list_reports(
+    statusFilter: Optional[str] = None
+):
+    """List all reports."""
+    return crud.get_reports(db=reportsDb, statusFilter)
+
+
+@app.get("/reports/{report_id}")
+def get_report(
+        reportId: str
+):
+    """Get a single report by ID."""
+    report = crud.get_report(
+        db=reportsDb,
+        issue_id=reportId
+    )
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    return report
+
+
+@app.put("/reports/{report_id}")
+def update_report(
+        report_id: str,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        status: Optional[str] = None
+):
+    """Update a report."""
+    report = crud.get_report(
+        db=reportsDb,
+        issue_id=reportId
+    )
+
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
 
 
 
-@app.get("/v1/issues", response_model=list[IssueDB])
-def list_issues(db: Session = Depends(get_db)):
-    return crud.get_issues(db)
+    return report
 
 
-@app.get("/v1/issues/{issue_id}", response_model=IssueDB)
-def get_issue(issue_id: str, db: Session = Depends(get_db)):
-    issue = crud.get_issue(db, issue_id)
-    if not issue:
-        raise HTTPException(status_code=404, detail="Issue not found")
-    return issue
+@app.delete("/reports/{report_id}")
+def delete_report(report_id: str):
+    """Delete a report."""
+    if report_id not in reports_db:
+        raise HTTPException(status_code=404, detail="Report not found")
+    del reports_db[report_id]
+    return {"detail": "Report deleted"}
