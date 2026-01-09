@@ -82,7 +82,7 @@ def create_report(
     reportId = str(uuid.uuid4())
     threadId, creationTime, aiResponse = run_backboard_ai(description=description,
                                                           imageFiles=issueImages)
-    report = crud.create_issue(db=reportsDb,
+    report = crud.create_report(db=reportsDb,
                                userReport,
                                aiResponse,
                                reportId,
@@ -97,7 +97,7 @@ def list_reports(
     statusFilter: Optional[str] = None
 ):
     """List all reports."""
-    return crud.get_issues(db=reportsDb, statusFilter)
+    return crud.get_reports(db=reportsDb, statusFilter)
 
 
 @app.get("/reports/{report_id}")
@@ -105,7 +105,7 @@ def get_report(
         reportId: str
 ):
     """Get a single report by ID."""
-    report = crud.get_issue(
+    report = crud.get_report(
         db=reportsDb,
         issue_id=reportId
     )
@@ -122,7 +122,7 @@ def update_report(
         status: Optional[str] = None
 ):
     """Update a report."""
-    report = crud.get_issue(
+    report = crud.get_report(
         db=reportsDb,
         issue_id=reportId
     )
