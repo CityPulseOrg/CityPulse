@@ -1,6 +1,6 @@
 '''
-This file is meant to call the backboard.io API and handle the issue informations received from the user.
-It returns variables such as threadId, issueSeverity, etc.
+This file is meant to be a script that creates the Backboard AI assistant, which
+will become the brain of the CityPulse application.
 '''
 
 import os
@@ -72,12 +72,15 @@ def create_assistant():
                                                               "of priority of the report (greater score means that "
                                                               "it is more urgent and has greater priority)"),
                                           },
+                                          "needs_clarification": {
+                                            "type": "boolean",
+                                            "description": ("True if the information given by the user is not clear "
+                                                            "or not enough (ex: image blurred, scarce description)"),
+                                          },
                                           "clarification": {
                                               "type": "string",
-                                              "description": ("If the information given by the user is not clear "
-                                                              "or not enough (ex: image blurred, scarce description), "
-                                                              "ask a simple question or multiple simple questions to "
-                                                              "clarify"),
+                                              "description": ("If needs_clarification is True, ask a simple question "
+                                                              "or multiple simple questions to clarify"),
                                           }
                                       },
                                       "required": [
@@ -105,3 +108,4 @@ def create_assistant():
     assistantId = response.get("assistant_id")
     if assistantId:
         print("Assistant ID: " + assistantId)
+

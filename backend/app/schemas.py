@@ -10,16 +10,19 @@ from typing import Optional, List
 
 #TODO: Verify if need to create another class for status update (note de Zak)
 class Report(BaseModel):
-    id: str
     title: str
     description: str
     address: str
     city: str
-    status: str = "New"
     latitude: Optional[float] = None
     longitude: Optional[float] = None
 
+class ReportStatusUpdate(BaseModel):
+    status: str
+
 class ReportInDB(Report):
+    id: str
+    status: str = "New"
     threadId: Optional[str] = None
     category: Optional[str] = None
     severity: Optional[str] = None
