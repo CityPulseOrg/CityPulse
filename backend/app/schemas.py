@@ -47,7 +47,7 @@ class ReportEventList(ReportInDB):
 
 # ---- Aliases for Issue-based API (CityPulse v1) ----
 
-class IssueCreate(Report):
+class ReportCreate(Report):
     pass
 
 
@@ -56,12 +56,5 @@ class IssueOut(ReportInDB):
 
 
 
-class IssueDB(BaseModel):
-    id: UUID
-    status: str
-    raw_text: Optional[str] = None
-    created_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
 
 
