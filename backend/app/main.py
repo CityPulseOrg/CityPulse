@@ -27,10 +27,15 @@ DOCS: use the Fast APi documentation: https://fastapi.tiangolo.com/tutorial/firs
 """
 
 import uuid
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Form, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from typing import Optional, List
+from ai_workflow.workflow import *
+from crud import *
+from schemas import *
 
 app = FastAPI(title="CityPulse API", version="1.0.0")
+
 #TODO: will need to change origins, method and headers for prod
 app.add_middleware(
     CORSMiddleware,
@@ -40,13 +45,14 @@ app.add_middleware(
 )
 
 #TODO: In-memory store for now (swap for DB once models are ready)
-reports_db: dict = {}
+reportsDb: dict = {}
 
 
 @app.get("/health")
 def health():
     """Health check endpoint - required for Docker."""
     return {"status": "healthy", "service": "citypulse-backend"}
+
 
 
 @app.get("/")
@@ -56,55 +62,77 @@ def root():
 
 @app.post("/reports")
 def create_report(
-    title: str,
-    description: str,
-    address: str,
-    city: str,
-    latitude: float | None = None,
-    longitude: float | None = None,
+    title: str = Form(...),
+    description: str = Form(...),
+    address: str = Form(...),
+    city: str = Form(...),
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None,
+    issueImages: List[UploadFile] = File(...),
 ):
     """Create a new report."""
-    report_id = str(uuid.uuid4())
-    report = {
-        "id": report_id,
-        "title": title,
-        "description": description,
-        "address": address,
-        "city": city,
-        "latitude": latitude,
-        "longitude": longitude,
-        "status": "open",
-    }
-    reports_db[report_id] = report
+    userReport = Report(
+        title=title,
+        description=description,
+        address=address,
+        city=city,
+        latitude=latitude,
+        longitude=longitude,
+    )
+
+    reportId = str(uuid.uuid4())
+    threadId, creationTime, aiResponse = run_backboard_ai(description=description,
+                                                          imageFiles=issueImages)
+    report = crud.create_report(db=reportsDb,
+                               userReport,
+                               aiResponse,
+                               reportId,
+                               threadId,
+                               creationTime)
+
     return report
 
 
 @app.get("/reports")
-def list_reports():
+def list_reports(
+    statusFilter: Optional[str] = None
+):
     """List all reports."""
-    return list(reports_db.values())
+    return crud.get_reports(db=reportsDb, statusFilter)
 
 
 @app.get("/reports/{report_id}")
-def get_report(report_id: str):
+def get_report(
+        reportId: str
+):
     """Get a single report by ID."""
-    if report_id not in reports_db:
+    report = crud.get_report(
+        db=reportsDb,
+        issue_id=reportId
+    )
+    if not report:
         raise HTTPException(status_code=404, detail="Report not found")
-    return reports_db[report_id]
+    return report
 
 
 @app.put("/reports/{report_id}")
-def update_report(report_id: str, title: str | None = None, description: str | None = None, status: str | None = None):
+def update_report(
+        report_id: str,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        status: Optional[str] = None
+):
     """Update a report."""
-    if report_id not in reports_db:
+    report = crud.get_report(
+        db=reportsDb,
+        issue_id=reportId
+    )
+
+    if not report:
         raise HTTPException(status_code=404, detail="Report not found")
-    report = reports_db[report_id]
-    if title:
-        report["title"] = title
-    if description:
-        report["description"] = description
-    if status:
-        report["status"] = status
+
+
+
     return report
 
 
