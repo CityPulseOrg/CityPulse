@@ -54,6 +54,7 @@ def health():
     return {"status": "healthy", "service": "citypulse-backend"}
 
 
+
 @app.get("/")
 def root():
     return {"message": "CityPulse API", "docs": "/docs"}

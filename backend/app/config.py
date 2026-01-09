@@ -10,8 +10,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     # Database
-    #TODO: add a db url in .env and import it here
-    database_url: str = ""
+    database_url: str 
 
     # Backboard AI Integration
     # TODO: read from env KEEP SECRET, DO NOT TOUCH
