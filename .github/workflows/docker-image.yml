@@ -18,3 +18,21 @@ jobs:
       - name: Build Docker image
         run: docker build -t citypulse:${{ github.sha }} -f backend/Dockerfile backend
 
+      - name: Run with secrets
+        env:
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          DATABASE_URL: postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@127.0.0.1:5432/${{ secrets.POSTGRES_DB }}
+          BACKBOARD_API_KEY: ${{ secrets.BACKBOARD_API_KEY }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        run: |
+          docker run -d -p 8000:8000 \
+            -e POSTGRES_USER \
+            -e POSTGRES_PASSWORD \
+            -e POSTGRES_DB \
+            -e DATABASE_URL \
+            -e BACKBOARD_API_KEY \
+            -e VITE_API_URL \
+            citypulse:${{ github.sha }}
+

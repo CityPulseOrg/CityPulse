@@ -91,5 +91,4 @@ Citizens -> Frontend -> Backend API -> Backboard AI Workflow
 | POSTGRES_PASSWORD     | Database password              |
 | POSTGRES_DB           | Database name                  |
 | BACKBOARD_API_KEY     | Backboard API key              |
-| BACKBOARD_WORKFLOW_ID | Backboard workflow ID          |
 | VITE_API_URL          | Backend URL for frontend       |
