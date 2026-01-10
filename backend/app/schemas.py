@@ -20,7 +20,7 @@ class Report(BaseModel):
     longitude: Optional[float] = None
 
 class ReportInDB(Report):
-    id: int
+    id: UUID
     threadId: Optional[str] = None
     category: Optional[str] = None
     severity: Optional[str] = None
@@ -35,8 +35,8 @@ class ReportEvent(BaseModel):
     payload: Optional[str] = None
 
 class ReportEventInDB(ReportEvent):
-    id: int
-    reportId: int
+    id: UUID
+    reportId: UUID
     creationTime: datetime
 
     model_config = ConfigDict(from_attributes=True)

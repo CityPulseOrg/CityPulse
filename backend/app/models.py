@@ -19,6 +19,7 @@ def utc_now():
 class IssueTable(Base):
     __tablename__ = "issues"
     
+    #TODO 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # Core user report fields (match schemas.Report / ReportInDB)
@@ -59,4 +60,4 @@ class IssueEventTable(Base):
     issue = relationship("IssueTable", back_populates="events")
 
 
-# Add your SQLAlchemy models here
+

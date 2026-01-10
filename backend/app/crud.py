@@ -1,9 +1,11 @@
 from sqlalchemy.orm import Session
 from uuid import UUID
-
+from typing import Union
 from app import models
 from app.schemas import ReportCreate
 
+# -------------------------------
+# CREATE
 
 def _parse_uuid(value: str):
     try:
@@ -23,20 +25,77 @@ def create_report(db: Session, payload: ReportCreate) -> models.IssueTable:
         longitude=payload.longitude,
     )
     db.add(report)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(report)
     return report
 
+
+#-----------------
+# READ
 
 def get_reports(db: Session):
     return db.query(models.IssueTable).order_by(models.IssueTable.creationTime.desc()).all()
 
 
-def get_report(db: Session, report_id: str):
+def get_report(db: Session, report_id: Union[str, UUID]):
     uid = _parse_uuid(report_id)
     if uid is None:
         return None
     return db.query(models.IssueTable).filter(models.IssueTable.id == uid).first()
 
-#delete/update
+
+# -------------------------
+# UPDATE
+
+def update_report(
+    db: Session,
+    report_id: str,
+    new_title: str | None = None,
+    new_description: str | None = None,
+    new_status: str | None = None,
+):
+    report = get_report(db, report_id)
+    if report is None:
+        return None
+
+    updates = {
+        "title": new_title,
+        "description": new_description,
+        "status": new_status,
+    }
+
+    for field, value in updates.items():
+        if value is not None:
+            setattr(report, field, value)
+
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
+    db.refresh(report)
+    return report
+
+
+# -------------------------
+# DELETE
+
+def delete_report(db: Session, report_id: UUID) -> bool:
+    report = get_report(db, report_id)
+    if report is None:
+        return False
+
+    db.delete(report)
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
+    return True
 
