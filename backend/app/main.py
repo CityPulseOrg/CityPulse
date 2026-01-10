@@ -31,7 +31,7 @@ from fastapi import FastAPI, HTTPException, Form, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List
 from ai_workflow.workflow import *
-from crud import *
+from crud import create_report, get_report, get_reports, update_report, delete_report
 from schemas import *
 
 app = FastAPI(title="CityPulse API", version="1.0.0")
@@ -54,7 +54,6 @@ def health():
     return {"status": "healthy", "service": "citypulse-backend"}
 
 
-
 @app.get("/")
 def root():
     return {"message": "CityPulse API", "docs": "/docs"}
@@ -66,8 +65,8 @@ def create_report(
     description: str = Form(...),
     address: str = Form(...),
     city: str = Form(...),
-    latitude: Optional[float] = None,
-    longitude: Optional[float] = None,
+    latitude: Optional[float] = Form(None),
+    longitude: Optional[float] = Form(None),
     issueImages: List[UploadFile] = File(...),
 ):
     """Create a new report."""
@@ -81,14 +80,23 @@ def create_report(
     )
 
     reportId = str(uuid.uuid4())
-    threadId, creationTime, aiResponse = run_backboard_ai(description=description,
-                                                          imageFiles=issueImages)
-    report = crud.create_report(db=reportsDb,
-                               userReport,
-                               aiResponse,
-                               reportId,
-                               threadId,
-                               creationTime)
+
+    try:
+        threadId, creationTime, aiResponse = run_backboard_ai(
+        description=description,
+        imageFiles=issueImages
+        )
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"AI workflow failed: {e}")
+
+    report = create_report(
+        reportsDb,
+        userReport,
+        aiResponse,
+        reportId,
+        threadId,
+        creationTime
+    )
 
     return report
 
@@ -98,15 +106,15 @@ def list_reports(
     statusFilter: Optional[str] = None
 ):
     """List all reports."""
-    return crud.get_reports(db=reportsDb, statusFilter)
+    return get_reports(reportsDb, statusFilter)
 
 
-@app.get("/reports/{report_id}")
+@app.get("/reports/{reportId}")
 def get_report(
         reportId: str
 ):
     """Get a single report by ID."""
-    report = crud.get_report(
+    report = get_report(
         db=reportsDb,
         issue_id=reportId
     )
@@ -115,31 +123,29 @@ def get_report(
     return report
 
 
-@app.put("/reports/{report_id}")
+@app.put("/reports/{reportId}")
 def update_report(
-        report_id: str,
+        reportId: str,
         title: Optional[str] = None,
         description: Optional[str] = None,
         status: Optional[str] = None
 ):
     """Update a report."""
-    report = crud.get_report(
+    report = update_report(
         db=reportsDb,
-        issue_id=reportId
+        report_id=reportId,
+        new_title=title,
+        new_description=description,
+        new_status=status
     )
-
-    if not report:
-        raise HTTPException(status_code=404, detail="Report not found")
-
-
-
     return report
 
 
-@app.delete("/reports/{report_id}")
-def delete_report(report_id: str):
+@app.delete("/reports/{reportId}")
+def delete_report(reportId: str):
     """Delete a report."""
-    if report_id not in reports_db:
-        raise HTTPException(status_code=404, detail="Report not found")
-    del reports_db[report_id]
-    return {"detail": "Report deleted"}
+    report_deleted = delete_report(
+        db=reportsDb,
+        report_id=reportId,
+    )
+    return report_deleted

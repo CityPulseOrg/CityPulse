@@ -22,7 +22,7 @@ class ReportStatusUpdate(BaseModel):
     status: str
 
 class ReportInDB(Report):
-    id: str
+    id: UUID
     status: str = "New"
     threadId: Optional[str] = None
     category: Optional[str] = None
@@ -38,8 +38,8 @@ class ReportEvent(BaseModel):
     payload: Optional[str] = None
 
 class ReportEventInDB(ReportEvent):
-    id: int
-    reportId: int
+    id: UUID
+    reportId: UUID
     creationTime: datetime
 
     model_config = ConfigDict(from_attributes=True)

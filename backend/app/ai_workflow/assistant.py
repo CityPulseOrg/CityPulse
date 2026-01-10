@@ -4,14 +4,21 @@ will become the brain of the CityPulse application.
 '''
 
 import os
-import json
 import requests
+import logging
+logger = logging.getLogger(__name__)
 
+#TODO: Make sure that timeout= can be used inside the API call
 def create_assistant():
+    apiKey = os.environ.get("BACKBOARD_API_KEY")
+    if not apiKey:
+        print("Error: BACKBOARD_API_KEY env variable not found or not set")
+        return None
+
     response = requests.post("https://app.backboard.io/api/assistants",
                   headers={
                       "Content-Type": "application/json",
-                      "X-API-Key": os.environ.get("BACKBOARD_API_KEY")
+                      "X-API-Key": apiKey
                   },
                   json={
                       "name": "CPAssistant",
@@ -84,7 +91,12 @@ def create_assistant():
                                           }
                                       },
                                       "required": [
-                                          "classification", "severity", "priority", "priority_score", "clarification"
+                                          "classification",
+                                          "severity",
+                                          "priority",
+                                          "priority_score",
+                                          "needs_clarification",
+                                          "clarification"
                                       ]
                                   }
                               }
@@ -93,19 +105,23 @@ def create_assistant():
                       "embedding_provider": "openai",
                       "embedding_model_name": "text-embedding-3-large",
                       "embedding_dims": 3072
-                  }
+                  },
+                  timeout=30
                   )
 
     try:
         response.raise_for_status()
-    except requests.HTTPError as e:
-        print("Sorry, there was an error creating the assistant: ")
-        print(response.text)
-        return
+    except requests.HTTPError:
+        logger.error("Sorry, there was an error creating the assistant: " + response.text)
+        return None
 
     response = response.json()
-    print("CPAssistant created successfully")
+    logger.info("CPAssistant created successfully")
     assistantId = response.get("assistant_id")
     if assistantId:
-        print("Assistant ID: " + assistantId)
+        logger.info("Assistant ID: " + assistantId)
+    return assistantId
 
+#TODO: Verify if this line is needed
+if __name__ == "__main__":
+    create_assistant()
