@@ -2,14 +2,12 @@
 CityPulse Pydantic Schemas
 Request/response models for API validation.
 
-TODO: To be implemented by Zak
 """
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
 
-#TODO: Verify if need to create another class for status update (note de Zak)
 class Report(BaseModel):
     title: str
     description: str

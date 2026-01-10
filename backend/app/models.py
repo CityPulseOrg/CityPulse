@@ -2,7 +2,6 @@
 CityPulse Database Models
 SQLAlchemy models for the civic issue reporting system.
 
-TODO: To be implemented by Bala/Zak
 """
 import uuid
 from datetime import datetime, timezone 
@@ -19,7 +18,6 @@ def utc_now():
 class IssueTable(Base):
     __tablename__ = "issues"
     
-    #TODO 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # Core user report fields (match schemas.Report / ReportInDB)
