@@ -8,6 +8,7 @@ import requests
 from requests import RequestException
 import logging
 logger = logging.getLogger(__name__)
+from app.validators import sanitize_api_key
 
 #TODO: Make sure that timeout= can be used inside the API call
 def create_assistant():
@@ -114,14 +115,14 @@ def create_assistant():
     except RequestException as e:
         error_msg = f"Error creating the assistant: {e}"
         if resp is not None:
-            error_msg += f" | Response: {resp.text}"
+            error_msg += f" | Response: {sanitize_api_key(resp.text, api_key)}"
         logger.error(error_msg)
         return None
 
     try:
         resp_json = resp.json()
     except ValueError as e:
-        logger.error(f"Error parsing assistant creation response as JSON: {e} | Response: {resp.text}")
+        logger.error(f"Error parsing assistant creation response as JSON: {e} | Response: {sanitize_api_key(resp.text, api_key)}")
         return None
 
     logger.info("CPAssistant created successfully")
