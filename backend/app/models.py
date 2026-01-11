@@ -32,7 +32,6 @@ class IssueTable(Base):
     longitude = Column(Float, nullable=True)
 
     # AI-enriched fields
-    #TODO: Make sure that 'bool' is the right key word in needs_clarification column
     threadId = Column(String, nullable=True)     
     category = Column(String, nullable=True)
     severity = Column(String, nullable=True)
