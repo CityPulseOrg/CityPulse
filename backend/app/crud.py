@@ -2,10 +2,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from typing import Union, Optional
 from app import models
-from app.schemas import *
-
-# -------------------------------
-# CREATE
+from app.schemas import Report
 
 def _parse_uuid(value: str) -> Optional[UUID]:
     try:
@@ -73,7 +70,6 @@ def get_reports(db: Session):
     return db.query(models.IssueTable).order_by(models.IssueTable.creationTime.desc()).all()
 
 
-#TODO: Make sure that the coerce_uuid function is necessary
 def get_report(db: Session, report_id: Union[str, UUID]) -> Optional[models.IssueTable]:
     uuid = _coerce_uuid(report_id)
     if uuid is None:
