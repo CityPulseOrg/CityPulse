@@ -10,6 +10,36 @@ from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
 
+
+class ClassificationEnum(str, Enum):
+    POTHOLE = "pothole"
+    BROKEN_STREETLIGHT = "broken_streetlight"
+    BROKEN_STREET_SIGN = "broken_street_sign"
+    EXCESSIVE_DUMPING = "excessive_dumping"
+    ILLEGAL_GRAFFITI = "illegal_graffiti"
+    VANDALISM = "vandalism"
+    OVERGROWN_GRASS = "overgrown_grass"
+    UNPLOWED_AREA = "unplowed_area"
+    ICY_STREET = "icy_street"
+    ICY_SIDEWALK = "icy_sidewalk"
+    MALFUNCTIONING_WATERFOUNTAIN = "malfunctioning_waterfountain"
+    OTHER = "other"
+
+
+class SeverityEnum(str, Enum):
+    VERY_LOW = "very_low"
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    VERY_HIGH = "very_high"
+
+
+class PriorityEnum(str, Enum):
+    NOT_URGENT = "not_urgent"
+    URGENT = "urgent"
+    VERY_URGENT = "very_urgent"
+
+
 #TODO: Verify if need to create another class for status update (note de Zak)
 class Report(BaseModel):
     title: str
@@ -38,9 +68,9 @@ class ReportInDB(Report):
     id: UUID
     status: ReportStatus = ReportStatus.NEW
     threadId: Optional[str] = None
-    category: Optional[str] = None
-    severity: Optional[str] = None
-    priority: Optional[str] = None
+    category: Optional[ClassificationEnum] = None
+    severity: Optional[SeverityEnum] = None
+    priority: Optional[PriorityEnum] = None
     nbOfMatches: int = 0
     creationTime: datetime
 
