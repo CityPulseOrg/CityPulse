@@ -61,6 +61,7 @@ def create_report(
         description=user_report.description,
         address=user_report.address,
         city=user_report.city,
+        status=user_report.status,
         latitude=user_report.latitude,
         longitude=user_report.longitude,
         threadId=thread_id_str,

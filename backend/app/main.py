@@ -120,20 +120,22 @@ def get_report(
 @app.put("/reports/{report_id}")
 def update_report(
         report_id: str,
+        db: Session = Depends(get_db),
         title: Optional[str] = None,
         description: Optional[str] = None,
         status: Optional[str] = None
 ):
     """Update a report."""
-    report = crud.get_report(
-        db=reportsDb,
-        report_id=report_id
+    report = crud.update_report(
+        db=db,
+        report_id=report_id,
+        new_title=title,
+        new_description=description,
+        new_status=status
     )
 
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
-
-
 
     return report
 
