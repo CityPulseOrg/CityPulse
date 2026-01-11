@@ -29,6 +29,8 @@ DOCS: use the Fast APi documentation: https://fastapi.tiangolo.com/tutorial/firs
 import uuid
 from fastapi import FastAPI, HTTPException, Form, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+import logging
+logger = logging.getLogger(__name__)
 from typing import Optional, List
 from .ai_workflow.workflow import run_backboard_ai
 from . import crud
@@ -83,13 +85,17 @@ def create_report(
 
     try:
         threadId, creationTime, aiResponse = run_backboard_ai(
-        description=description,
-        imageFiles=issueImages
+            description=description,
+            imageFiles=issueImages
         )
         if threadId is None or creationTime is None or aiResponse == {}:
-            raise Exception
-    except Exception as e:
-        raise HTTPException(status_code=502, detail="AI workflow failed") from e
+            logger.error("Sorry, the AI workflow returned an invalid response")
+            raise HTTPException(status_code=502, detail="AI workflow failed")
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Unexpected error in AI workflow")
+        raise HTTPException(status_code=502, detail="AI workflow failed")
 
     report = crud.create_report(
         reportsDb,
@@ -125,7 +131,7 @@ def get_report(
     return report
 
 
-@app.put("/reports/{reportId}")
+@app.put("/reports/{report_id}")
 def update_report_handler(
         updated_report: ReportUpdate
 ):
@@ -144,7 +150,7 @@ def update_report_handler(
 
 
 @app.delete("/reports/{reportId}")
-def delete_report_handler(reportId: str):
+def delete_report_handler(reportId: UUID):
     """Delete a report."""
     report_deleted = crud.delete_report(
         db=reportsDb,

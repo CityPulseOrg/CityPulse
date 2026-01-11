@@ -40,10 +40,10 @@ def create_thread(assistantId: str, api_key: str):
     threadId = response.get("thread_id")
     creationTime = response.get("created_at")
     if not threadId:
-        print(f"Could not find thread ID in response: {response}")
+        logger.error(f"Could not find thread ID in response: {response}")
         return None, None
     if not creationTime:
-        print(f"Could not find creation time in response: {response}")
+        logger.error(f"Could not find creation time in response: {response}")
         return None, None
     return threadId, creationTime
 
@@ -77,9 +77,8 @@ def upload_information_to_thread(api_key: str, threadId: str, description: str, 
     try:
         response.raise_for_status()
         return response
-    except requests.HTTPError as e:
-        print("Sorry, there was an error uploading the message: ")
-        print(response.text)
+    except requests.HTTPError:
+        logger.error(f"Sorry, there was an error uploading the message: {response.text}")
         return None
 
 #TODO: Make sure that the timeout= is necessary in the API call
@@ -94,8 +93,7 @@ def get_assistant_response(api_key: str, threadId: str):
         )
         thread.raise_for_status()
     except requests.HTTPError:
-        print("Sorry, there was an error getting the thread: ")
-        print(thread.text)
+        logger.error(f"Sorry, there was an error getting the thread: {thread.text}")
         return {}
 
     try:
