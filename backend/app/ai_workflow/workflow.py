@@ -16,11 +16,11 @@ from app.validators import sanitize_api_key
 
 #TODO: add polling if necessary
 #TODO: Get Assistant ID and put it in the backboard url
-def create_thread(assistantId: str, api_key: str):
+def create_thread(assistant_id: str, api_key: str):
     resp = None
     try:
         resp = requests.post(
-            f"https://app.backboard.io/api/assistants/{assistantId}/threads",
+            f"https://app.backboard.io/api/assistants/{assistant_id}/threads",
             headers={
                 "Content-Type": "application/json",
                 "X-API-Key": api_key
@@ -44,20 +44,20 @@ def create_thread(assistantId: str, api_key: str):
         )
         return None, None
 
-    threadId = resp_json.get("thread_id")
-    creationTime = resp_json.get("created_at")
-    if not threadId:
+    thread_id = resp_json.get("thread_id")
+    creation_time = resp_json.get("created_at")
+    if not thread_id:
         logger.error("Could not find thread ID in response")
         return None, None
-    if not creationTime:
+    if not creation_time:
         logger.error("Could not find creation time in response")
         return None, None
-    return threadId, creationTime
+    return thread_id, creation_time
 
 # TODO: Make sure that Content-Type does not need to be defined and verify if requests lib will automatically set it
 # TODO: Need to finish the last part of the function
-def upload_information_to_thread(api_key: str, threadId: str, description: str, imageFiles: List[UploadFile]):
-    backboardUrl = f"https://app.backboard.io/api/threads/{threadId}/messages"
+def upload_information_to_thread(api_key: str, thread_id: str, description: str, image_files: List[UploadFile]):
+    backboard_url = f"https://app.backboard.io/api/threads/{thread_id}/messages"
     headers = {
             # "Content-Type": "multipart/form-data",
             "X-API-Key": api_key
@@ -73,16 +73,16 @@ def upload_information_to_thread(api_key: str, threadId: str, description: str, 
             "metadata": ""
         }
 
-    imagesArray = []
-    for file in imageFiles:
+    images_array = []
+    for file in image_files:
         filename = file.filename or "image.jpg"
         mimetype = getattr(file, "content_type", "image/jpeg")
-        fileObject = file.file
-        imagesArray.append(("files", (filename, fileObject, mimetype)))
+        file_object = file.file
+        images_array.append(("files", (filename, file_object, mimetype)))
 
     resp = None
     try:
-        resp = requests.post(backboardUrl, headers=headers, data=data, files=imagesArray, timeout=30)
+        resp = requests.post(backboard_url, headers=headers, data=data, files=images_array, timeout=30)
         resp.raise_for_status()
         return resp
     except RequestException as e:
@@ -93,15 +93,15 @@ def upload_information_to_thread(api_key: str, threadId: str, description: str, 
         return None
 
 #TODO: Make sure that the timeout= is necessary in the API call
-def get_assistant_response(api_key: str, threadId: str, max_attempts: int = 8, base_delay: float = 0.5):
-    url = f"https://app.backboard.io/api/threads/{threadId}"
+def get_assistant_response(api_key: str, thread_id: str, max_attempts: int = 8, base_delay: float = 0.5):
+    backboard_url = f"https://app.backboard.io/api/threads/{thread_id}"
     headers = {"X-API-Key": api_key}
     timeout = 30
 
     for attempt in range(1, max_attempts + 1):
         resp = None
         try:
-            resp = requests.get(url=url, headers=headers, timeout=timeout)
+            resp = requests.get(url=backboard_url, headers=headers, timeout=timeout)
             resp.raise_for_status()
         except RequestException as e:
             error_msg = f"Error getting the thread: {e}"
@@ -120,9 +120,9 @@ def get_assistant_response(api_key: str, threadId: str, max_attempts: int = 8, b
         if not messages:
             return {}
         else:
-            lastMessage = messages[- 1]
-            if lastMessage.get("role") == "assistant" and lastMessage.get("status") == "COMPLETED":
-                content = lastMessage.get("content")
+            last_message = messages[- 1]
+            if last_message.get("role") == "assistant" and last_message.get("status") == "COMPLETED":
+                content = last_message.get("content")
                 if isinstance(content, str):
                     try:
                         return json.loads(content)
@@ -134,7 +134,7 @@ def get_assistant_response(api_key: str, threadId: str, max_attempts: int = 8, b
                 else:
                     logger.error("Sorry, we encountered an unexpected content type")
                     return {}
-            if lastMessage.get("status") in {"FAILED", "CANCELLED", "ERROR"}:
+            if last_message.get("status") in {"FAILED", "CANCELLED", "ERROR"}:
                 logger.error("Sorry, the assistant message on thread was not retrieved")
                 return {}
         
@@ -143,11 +143,11 @@ def get_assistant_response(api_key: str, threadId: str, max_attempts: int = 8, b
             time.sleep(base_delay)
             base_delay *= 2
         else:
-            logger.info(f"Maximum amount of attempts reached while waiting for the assistant response on thread {threadId}")
+            logger.info(f"Maximum amount of attempts reached while waiting for the assistant response on thread {thread_id}")
 
     return {}
 
-def run_backboard_ai(description: str, imageFiles: List[UploadFile]):
+def run_backboard_ai(description: str, image_files: List[UploadFile]):
     api_key = os.environ.get("BACKBOARD_API_KEY")
     assistant_id = os.environ.get("ASSISTANT_ID")
     if not api_key or not assistant_id:
@@ -155,16 +155,16 @@ def run_backboard_ai(description: str, imageFiles: List[UploadFile]):
         return None, None, {}
 
     try:
-        threadId, creationTime = create_thread(assistant_id, api_key)
-        if threadId is None or creationTime is None:
+        thread_id, creation_time = create_thread(assistant_id, api_key)
+        if thread_id is None or creation_time is None:
             return None, None, {}
 
-        uploaded_data = upload_information_to_thread(api_key, threadId, description, imageFiles)
+        uploaded_data = upload_information_to_thread(api_key, thread_id, description, image_files)
         if uploaded_data is None:
             return None, None, {}
 
-        ai_response = get_assistant_response(api_key, threadId)
-        return threadId, creationTime, ai_response
+        ai_response = get_assistant_response(api_key, thread_id)
+        return thread_id, creation_time, ai_response
     except RequestException as e:
         logger.error(f"Request failure in AI workflow: {e}")
         return None, None, {}

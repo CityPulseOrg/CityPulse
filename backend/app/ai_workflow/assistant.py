@@ -127,12 +127,12 @@ def create_assistant():
         return None
 
     logger.info("CPAssistant created successfully")
-    assistantId = resp_json.get("assistant_id")
-    if assistantId:
-        logger.info("Assistant ID: " + assistantId)
-        os.environ["ASSISTANT_ID"] = assistantId
-        logger.info("ASSISTANT_ID=%s", assistantId)
-    return assistantId
+    assistant_id = resp_json.get("assistant_id")
+    if assistant_id:
+        logger.info("Assistant ID: " + assistant_id)
+        os.environ["ASSISTANT_ID"] = assistant_id
+        logger.info("ASSISTANT_ID=%s", assistant_id)
+    return assistant_id
 
 
 def _find_existing_assistant_id(api_key: str, name: str) -> Optional[str]:

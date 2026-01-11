@@ -47,11 +47,11 @@ def create_report(
     city: str = Form(...),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
-    issueImages: List[UploadFile] = File(...),
+    issue_images: List[UploadFile] = File(...),
     db: Session = Depends(get_db),
 ):
     """Create a new report."""
-    validate_images(issueImages)
+    validate_images(issue_images)
 
     userReport = Report(
         title=title,
@@ -65,11 +65,11 @@ def create_report(
     report_id = uuid.uuid4()
 
     try:
-        threadId, creationTime, aiResponse = run_backboard_ai(
+        thread_id, creation_time, ai_response = run_backboard_ai(
             description=description,
-            imageFiles=issueImages,
+            image_files=issue_images,
         )
-        if threadId is None or creationTime is None or aiResponse == {}:
+        if thread_id is None or creation_time is None or ai_response == {}:
             logger.error("AI workflow returned an invalid response")
             raise HTTPException(status_code=502, detail="AI workflow failed")
     except HTTPException:
@@ -82,10 +82,10 @@ def create_report(
         report = crud.create_report(
             db=db,
             user_report=userReport,
-            ai_response=aiResponse,
+            ai_response=ai_response,
             report_id=report_id,
-            thread_id=threadId,
-            creation_time=creationTime,
+            thread_id=thread_id,
+            creation_time=creation_time,
         )
     except Exception:
         logger.exception("Failed to persist report")
