@@ -133,12 +133,15 @@ def get_report(
         raise HTTPException(status_code=404, detail="Report not found")
     return report
 
-
+#TODO: add authentication middleware and role check
 @app.put("/reports/{report_id}")
 def update_report_handler(
+        report_id: UUID
         updated_report: ReportUpdate
 ):
     """Update a report."""
+    if report_id != updated_report.report_id:
+        raise HTTPException(status_code=400, detail="Path report_id does not match body report_id")
     report = crud.update_report(
         db=reportsDb,
         report_id=updated_report.report_id,

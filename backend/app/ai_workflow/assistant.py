@@ -130,6 +130,5 @@ def create_assistant():
         logger.info("Assistant ID: " + assistantId)
     return assistantId
 
-#TODO: Verify if this line is needed
 if __name__ == "__main__":
     create_assistant()

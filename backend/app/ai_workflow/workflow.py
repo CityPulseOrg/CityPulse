@@ -43,10 +43,10 @@ def create_thread(assistantId: str, api_key: str):
     threadId = resp_json.get("thread_id")
     creationTime = resp_json.get("created_at")
     if not threadId:
-        logger.error(f"Could not find thread ID in response: {resp_json}")
+        logger.error(f"Could not find thread ID in response")
         return None, None
     if not creationTime:
-        logger.error(f"Could not find creation time in response: {resp_json}")
+        logger.error(f"Could not find creation time in response")
         return None, None
     return threadId, creationTime
 
