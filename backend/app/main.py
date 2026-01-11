@@ -46,8 +46,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-#TODO: In-memory store for now (swap for DB once models are ready)
-reportsDb: dict = {}
 
 
 @app.get("/health")
@@ -85,12 +83,14 @@ def create_report(
     reportId = str(uuid.uuid4())
     threadId, creationTime, aiResponse = run_backboard_ai(description=description,
                                                           imageFiles=issueImages)
-    report = crud.create_report(db=reportsDb,
-                               userReport,
-                               aiResponse,
-                               reportId,
-                               threadId,
-                               creationTime)
+    report = crud.create_report(
+        db=reportsDb,
+        user_report=userReport,
+        ai_response=aiResponse,
+        report_id=reportId,
+        thread_id=threadId,
+        creation_time=creationTime
+    )
 
     return report
 
@@ -100,17 +100,17 @@ def list_reports(
     statusFilter: Optional[str] = None
 ):
     """List all reports."""
-    return crud.get_reports(db=reportsDb, statusFilter)
+    return crud.get_reports(db=reportsDb, status_filter=statusFilter)
 
 
 @app.get("/reports/{report_id}")
 def get_report(
-        reportId: str
+        report_id: str
 ):
     """Get a single report by ID."""
     report = crud.get_report(
         db=reportsDb,
-        report_id=reportId
+        report_id=report_id
     )
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")

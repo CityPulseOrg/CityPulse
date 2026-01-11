@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from uuid import UUID
 from datetime import datetime, timezone
 from typing import Union, Optional
@@ -77,7 +78,7 @@ def create_report(
     db.add(report)
     try:
         db.commit()
-    except Exception:
+    except SQLAlchemyError:
         db.rollback()
         raise
     db.refresh(report)
@@ -87,15 +88,18 @@ def create_report(
 #-----------------
 # READ
 
-def get_reports(db: Session):
-    return db.query(models.IssueTable).order_by(models.IssueTable.creationTime.desc()).all()
+def get_reports(db: Session, status_filter: Optional[str] = None):
+    query = db.query(models.IssueTable)
+    if status_filter:
+        query = query.filter(models.IssueTable.status == status_filter)
+    return query.order_by(models.IssueTable.creationTime.desc()).all()
 
 
 def get_report(db: Session, report_id: Union[str, UUID]) -> Optional[models.IssueTable]:
-    uuid = _coerce_uuid(report_id)
-    if uuid is None:
+    coerced_id = _coerce_uuid(report_id)
+    if coerced_id is None:
         return None
-    return db.query(models.IssueTable).filter(models.IssueTable.id == uuid).first()
+    return db.query(models.IssueTable).filter(models.IssueTable.id == coerced_id).first()
 
 # -------------------------
 # UPDATE
@@ -131,7 +135,7 @@ def update_report(
 
     try:
         db.commit()
-    except Exception:
+    except SQLAlchemyError:
         db.rollback()
         raise
 
@@ -150,7 +154,7 @@ def delete_report(db: Session, report_id: Union[str, UUID]) -> bool:
     db.delete(report)
     try:
         db.commit()
-    except Exception:
+    except SQLAlchemyError:
         db.rollback()
         raise
 
