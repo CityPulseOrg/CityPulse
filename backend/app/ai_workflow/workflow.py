@@ -6,10 +6,11 @@ creating threads for individual reports and adding issue images to existing thre
 import os
 import json
 import requests
+import time
 from requests import RequestException
 import logging
 logger = logging.getLogger(__name__)
-from typing import List
+from typing import List, Any, Dict, Optional
 from fastapi import UploadFile
 
 #TODO: add polling if necessary
@@ -89,44 +90,57 @@ def upload_information_to_thread(api_key: str, threadId: str, description: str, 
         return None
 
 #TODO: Make sure that the timeout= is necessary in the API call
-def get_assistant_response(api_key: str, threadId: str):
-    resp = None
-    try:
-        resp = requests.get(
-            f"https://app.backboard.io/api/threads/{threadId}",
-            headers={
-                "X-API-Key": api_key
-            },
-            timeout=30
-        )
-        resp.raise_for_status()
-    except RequestException as e:
-        error_msg = f"Error getting the thread: {e}"
-        if resp is not None:
-            error_msg += f" | Response: {resp.text}"
-        logger.error(error_msg)
-        return {}
+def get_assistant_response(api_key: str, threadId: str, max_attempts: int = 8, base_delay: float = 0.5):
+    url = f"https://app.backboard.io/api/threads/{threadId}"
+    headers = {"X-API-Key": api_key}
+    timeout = 30
 
-    try:
-        resp_json = resp.json()
-    except ValueError as e:
-        logger.error(f"Error parsing thread response as JSON: {e} | Response: {resp.text}")
-        return {}
+    for attempt in range(1, max_attempts + 1):
+        resp = None
+        try:
+            resp = requests.get(url=url, headers=headers, timeout=timeout)
+            resp.raise_for_status()
+        except RequestException as e:
+            error_msg = f"Error getting the thread: {e}"
+            if resp is not None:
+                error_msg += f" | Response: {resp.text}"
+            logger.error(error_msg)
+            return {}
 
-    messages = resp_json.get("messages")
-    if not messages:
-        return {}
-    lastMessage = messages[- 1]
-    if lastMessage.get("role") == "assistant" and lastMessage.get("status") == "COMPLETED":
-        content = lastMessage.get("content")
-        if isinstance(content, str):
-            try:
-                return json.loads(content)
-            except json.JSONDecodeError:
-                logger.error("Sorry, the json response from the assistant was invalid")
-                return {}
-        elif isinstance(content, dict):
-            return content
+        try:
+            resp_json = resp.json()
+        except ValueError as e:
+            logger.error(f"Error parsing thread response as JSON: {e} | Response: {resp.text}")
+            return {}
+
+        messages = resp_json.get("messages")
+        if not messages:
+            return {}
+        else:
+            lastMessage = messages[- 1]
+            if lastMessage.get("role") == "assistant" and lastMessage.get("status") == "COMPLETED":
+                content = lastMessage.get("content")
+                if isinstance(content, str):
+                    try:
+                        return json.loads(content)
+                    except json.JSONDecodeError:
+                        logger.error("Sorry, the json response from the assistant was invalid")
+                        return {}
+                elif isinstance(content, dict):
+                    return content
+                else:
+                    logger.error("Sorry, we encountered an unexpected content type")
+                    return {}
+            if status in {"FAILED", "CANCELLED", "ERROR"}:
+                    logger.error("Sorry, the assistant message on thread was not retrieved")
+                    return {}
+        
+        if attempt < max_attempts:
+            logger.info(f"Assistant did not respond on the given thread. Waiting {base_delay} before retrying")
+            time.sleep(base_delay)
+            base_delay *= 2
+        else:
+            logger.info(f"Maximum amount of attempts reached while waiting for the assistant response on thread {threadId}")
 
     return {}
 
