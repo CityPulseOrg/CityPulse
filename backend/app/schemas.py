@@ -66,23 +66,23 @@ class ReportUpdate(BaseModel):
 
 class ReportInDB(Report):
     id: UUID
-    threadId: Optional[str] = None
+    thread_id: Optional[str] = None
     category: Optional[ClassificationEnum] = None
     severity: Optional[SeverityEnum] = None
     priority: Optional[PriorityEnum] = None
-    nbOfMatches: int = 0
-    creationTime: datetime
+    nb_of_matches: int = 0
+    creation_time: datetime
 
     model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
 class ReportEvent(BaseModel):
-    eventType: str
+    event_type: str
     payload: Optional[str] = None
 
 class ReportEventInDB(ReportEvent):
     id: UUID
-    reportId: UUID
-    creationTime: datetime
+    report_id: UUID
+    creation_time: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
