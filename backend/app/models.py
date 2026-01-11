@@ -2,7 +2,6 @@
 CityPulse Database Models
 SQLAlchemy models for the civic issue reporting system.
 
-TODO: To be implemented by Bala/Zak
 """
 import uuid
 from datetime import datetime, timezone 
@@ -63,4 +62,4 @@ class IssueEventTable(Base):
     issue = relationship("IssueTable", back_populates="events")
 
 
-# Add your SQLAlchemy models here
+
