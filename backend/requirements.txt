@@ -14,7 +14,7 @@ pydantic==2.5.3
 pydantic-settings==2.1.0
 
 # HTTP client (for Backboard API calls)
-httpx==0.26.0
+requests>=2.32.4,<3.0.0
 
 # File uploads
 python-multipart==0.0.7
