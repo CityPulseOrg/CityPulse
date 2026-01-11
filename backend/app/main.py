@@ -110,7 +110,7 @@ def get_report(
     """Get a single report by ID."""
     report = crud.get_report(
         db=reportsDb,
-        issue_id=reportId
+        report_id=reportId
     )
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
@@ -127,7 +127,7 @@ def update_report(
     """Update a report."""
     report = crud.get_report(
         db=reportsDb,
-        issue_id=reportId
+        report_id=report_id
     )
 
     if not report:
