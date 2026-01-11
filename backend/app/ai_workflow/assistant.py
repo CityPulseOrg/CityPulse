@@ -16,8 +16,9 @@ def create_assistant():
         logger.error("BACKBOARD_API_KEY env variable not found or not set")
         return None
 
+    resp = None
     try:
-        response = requests.post("https://app.backboard.io/api/assistants",
+        resp = requests.post("https://app.backboard.io/api/assistants",
                       headers={
                           "Content-Type": "application/json",
                           "X-API-Key": api_key
@@ -109,19 +110,22 @@ def create_assistant():
                       },
                       timeout=30
                       )
-        response.raise_for_status()
-    except RequestException:
-        logger.exception("Sorry, there was an error creating the assistant")
+        resp.raise_for_status()
+    except RequestException as e:
+        error_msg = f"Error creating the assistant: {e}"
+        if resp is not None:
+            error_msg += f" | Response: {resp.text}"
+        logger.error(error_msg)
         return None
 
     try:
-        response_json = response.json()
-    except ValueError:
-        logger.exception("Sorry, there was an error parsing assistant creation response as JSON")
+        resp_json = resp.json()
+    except ValueError as e:
+        logger.error(f"Error parsing assistant creation response as JSON: {e} | Response: {resp.text}")
         return None
 
     logger.info("CPAssistant created successfully")
-    assistantId = response_json.get("assistant_id")
+    assistantId = resp_json.get("assistant_id")
     if assistantId:
         logger.info("Assistant ID: " + assistantId)
     return assistantId
