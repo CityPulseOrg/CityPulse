@@ -92,7 +92,16 @@ def create_assistant():
                                               "priority",
                                               "priority_score",
                                               "needs_clarification",
-                                          ]
+                                          ],
+                                          "if": {
+                                              "properties": {
+                                                  "needs_clarification": {"const": True},
+                                              },
+                                              "required": ["needs_clarification"],
+                                          },
+                                          "then": {
+                                              "required": ["clarification"],
+                                          },
                                       }
                                   }
                               }

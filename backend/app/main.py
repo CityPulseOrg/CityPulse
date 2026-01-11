@@ -136,8 +136,8 @@ def get_report(
 #TODO: add authentication middleware and role check
 @app.put("/reports/{report_id}")
 def update_report_handler(
-        report_id: UUID
-        updated_report: ReportUpdate
+    report_id: UUID,
+    updated_report: ReportUpdate,
 ):
     """Update a report."""
     if report_id != updated_report.report_id:
