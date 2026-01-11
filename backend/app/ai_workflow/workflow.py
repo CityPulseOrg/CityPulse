@@ -15,35 +15,38 @@ from fastapi import UploadFile
 #TODO: add polling if necessary
 #TODO: Get Assistant ID and put it in the backboard url
 def create_thread(assistantId: str, api_key: str):
-    response = requests.post(
-        f"https://app.backboard.io/api/assistants/{assistantId}/threads",
-        headers={
-            "Content-Type": "application/json",
-            "X-API-Key": api_key
-        },
-        json={},
-        timeout=30
-    )
-
+    resp = None
     try:
-        response.raise_for_status()
-    except requests.HTTPError:
-        logger.error("Sorry, there was an error creating the thread")
+        resp = requests.post(
+            f"https://app.backboard.io/api/assistants/{assistantId}/threads",
+            headers={
+                "Content-Type": "application/json",
+                "X-API-Key": api_key
+            },
+            json={},
+            timeout=30
+        )
+        resp.raise_for_status()
+    except RequestException as e:
+        error_msg = f"Error creating the thread: {e}"
+        if resp is not None:
+            error_msg += f" | Response: {resp.text}"
+        logger.error(error_msg)
         return None, None
 
     try:
-        response = response.json()
-    except ValueError:
-        logger.error("Sorry, the thread create returned non-JSON")
+        resp_json = resp.json()
+    except ValueError as e:
+        logger.error(f"Thread create returned non-JSON: {e} | Response: {resp.text}")
         return None, None
 
-    threadId = response.get("thread_id")
-    creationTime = response.get("created_at")
+    threadId = resp_json.get("thread_id")
+    creationTime = resp_json.get("created_at")
     if not threadId:
-        logger.error(f"Could not find thread ID in response: {response}")
+        logger.error(f"Could not find thread ID in response: {resp_json}")
         return None, None
     if not creationTime:
-        logger.error(f"Could not find creation time in response: {response}")
+        logger.error(f"Could not find creation time in response: {resp_json}")
         return None, None
     return threadId, creationTime
 
@@ -73,36 +76,44 @@ def upload_information_to_thread(api_key: str, threadId: str, description: str, 
         fileObject = file.file
         imagesArray.append(("files", (filename, fileObject, mimetype)))
 
-    response = requests.post(backboardUrl, headers = headers, data = data, files = imagesArray, timeout=30)
+    resp = None
     try:
-        response.raise_for_status()
-        return response
-    except requests.HTTPError:
-        logger.error(f"Sorry, there was an error uploading the message: {response.text}")
+        resp = requests.post(backboardUrl, headers=headers, data=data, files=imagesArray, timeout=30)
+        resp.raise_for_status()
+        return resp
+    except RequestException as e:
+        error_msg = f"Error uploading the message: {e}"
+        if resp is not None:
+            error_msg += f" | Response: {resp.text}"
+        logger.error(error_msg)
         return None
 
 #TODO: Make sure that the timeout= is necessary in the API call
 def get_assistant_response(api_key: str, threadId: str):
+    resp = None
     try:
-        thread = requests.get(
+        resp = requests.get(
             f"https://app.backboard.io/api/threads/{threadId}",
             headers={
                 "X-API-Key": api_key
             },
             timeout=30
         )
-        thread.raise_for_status()
-    except requests.HTTPError:
-        logger.error(f"Sorry, there was an error getting the thread: {thread.text}")
+        resp.raise_for_status()
+    except RequestException as e:
+        error_msg = f"Error getting the thread: {e}"
+        if resp is not None:
+            error_msg += f" | Response: {resp.text}"
+        logger.error(error_msg)
         return {}
 
     try:
-        thread = thread.json()
-    except ValueError:
-        logger.error("Sorry, there was a json error when getting the thread")
+        resp_json = resp.json()
+    except ValueError as e:
+        logger.error(f"Error parsing thread response as JSON: {e} | Response: {resp.text}")
         return {}
 
-    messages = thread.get("messages")
+    messages = resp_json.get("messages")
     if not messages:
         return {}
     lastMessage = messages[- 1]
@@ -127,8 +138,7 @@ def run_backboard_ai(description: str, imageFiles: List[UploadFile]):
         return None, None, {}
 
     try:
-        thread = create_thread(assistant_id, api_key)
-        threadId, creationTime = thread
+        threadId, creationTime = create_thread(assistant_id, api_key)
         if threadId is None or creationTime is None:
             return None, None, {}
 
@@ -136,10 +146,10 @@ def run_backboard_ai(description: str, imageFiles: List[UploadFile]):
         if uploaded_data is None:
             return None, None, {}
 
-        response = get_assistant_response(api_key, threadId)
-        return threadId, creationTime, response
-    except RequestException:
-        logger.error("Sorry, there was a request failure (timeout or connection error)")
+        ai_response = get_assistant_response(api_key, threadId)
+        return threadId, creationTime, ai_response
+    except RequestException as e:
+        logger.error(f"Request failure in AI workflow: {e}")
         return None, None, {}
 
 
