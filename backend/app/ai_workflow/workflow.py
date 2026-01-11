@@ -30,25 +30,27 @@ def create_thread(assistantId: str, api_key: str):
         )
         resp.raise_for_status()
     except RequestException as e:
-        error_msg = f"Error creating the thread: {e}"
-        if resp is not None:
-            error_msg += f" | Response: {sanitize_api_key(resp.text, api_key)}"
-        logger.error(error_msg)
+        response_text = sanitize_api_key(resp.text, api_key) if resp is not None else None
+        logger.exception("Error creating the thread: %s | Response: %s", e, response_text)
         return None, None
 
     try:
         resp_json = resp.json()
     except ValueError as e:
-        logger.error(f"Thread create returned non-JSON: {e} | Response: {sanitize_api_key(resp.text, api_key)}")
+        logger.exception(
+            "Thread create returned non-JSON: %s | Response: %s",
+            e,
+            sanitize_api_key(resp.text, api_key),
+        )
         return None, None
 
     threadId = resp_json.get("thread_id")
     creationTime = resp_json.get("created_at")
     if not threadId:
-        logger.error(f"Could not find thread ID in response")
+        logger.error("Could not find thread ID in response")
         return None, None
     if not creationTime:
-        logger.error(f"Could not find creation time in response")
+        logger.error("Could not find creation time in response")
         return None, None
     return threadId, creationTime
 

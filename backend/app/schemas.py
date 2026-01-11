@@ -74,7 +74,7 @@ class ReportInDB(Report):
     nbOfMatches: int = 0
     creationTime: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
 class ReportEvent(BaseModel):
     eventType: str
