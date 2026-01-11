@@ -27,12 +27,14 @@ DOCS: use the Fast APi documentation: https://fastapi.tiangolo.com/tutorial/firs
 """
 
 import uuid
-from fastapi import FastAPI, HTTPException, Form, File, UploadFile
+from fastapi import FastAPI, HTTPException, Form, File, UploadFile, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
 from typing import Optional, List
 from ai_workflow.workflow import *
-from crud import *
-from schemas import *
+from database import get_db
+import crud
+from schemas import Report
 
 app = FastAPI(title="CityPulse API", version="1.0.0")
 
@@ -136,10 +138,10 @@ def update_report(
     return report
 
 
-@app.delete("/reports/{report_id}")
-def delete_report(report_id: str):
+@app.delete("/reports/{report_id}", status_code=204)
+def delete_report(report_id: str, db: Session = Depends(get_db)):
     """Delete a report."""
-    if report_id not in reports_db:
+    deleted = crud.delete_report(db, report_id)
+    if not deleted:
         raise HTTPException(status_code=404, detail="Report not found")
-    del reports_db[report_id]
-    return {"detail": "Report deleted"}
+    return None
