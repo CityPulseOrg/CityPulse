@@ -65,11 +65,12 @@ def get_reports(db: Session):
     return db.query(models.IssueTable).order_by(models.IssueTable.creationTime.desc()).all()
 
 
+#TODO: Make sure that the coerce_uuid function is necessary
 def get_report(db: Session, report_id: Union[str, UUID]) -> Optional[models.IssueTable]:
-    uid = _coerce_uuid(report_id)
-    if uid is None:
+    uuid = _coerce_uuid(report_id)
+    if uuid is None:
         return None
-    return db.query(models.IssueTable).filter(models.IssueTable.id == uid).first()
+    return db.query(models.IssueTable).filter(models.IssueTable.id == uuid).first()
 
 # -------------------------
 # UPDATE
@@ -79,7 +80,8 @@ def update_report(
     report_id: Union[str, UUID],
     new_title: Optional[str] = None,
     new_description: Optional[str] = None,
-    new_status: Optional[str] = None,) -> Optional[models.IssueTable]:
+    new_status: Optional[str] = None
+) -> Optional[models.IssueTable]:
     report = get_report(db, report_id)
     if report is None:
         return None

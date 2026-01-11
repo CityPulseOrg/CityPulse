@@ -6,7 +6,7 @@ SQLAlchemy models for the civic issue reporting system.
 import uuid
 from datetime import datetime, timezone 
 
-from sqlalchemy import Column, DateTime, ForeignKey, String, Text, Float, Integer
+from sqlalchemy import Column, DateTime, ForeignKey, String, Text, Float, Integer, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -38,7 +38,7 @@ class IssueTable(Base):
     severity = Column(String, nullable=True)
     priority = Column(String, nullable=True)
     priority_score = Column(Integer, nullable=True)
-    needs_claification = Column(bool, nullable=True)
+    needs_claification = Column(Boolean, nullable=True)
     clarification = Column(String, nullable=True)
     nbOfMatches = Column(Integer, nullable=False, default=0)
 
