@@ -12,6 +12,7 @@ import logging
 logger = logging.getLogger(__name__)
 from typing import List, Any, Dict, Optional
 from fastapi import UploadFile
+from app.validators import sanitize_api_key
 
 #TODO: add polling if necessary
 #TODO: Get Assistant ID and put it in the backboard url
@@ -31,14 +32,14 @@ def create_thread(assistantId: str, api_key: str):
     except RequestException as e:
         error_msg = f"Error creating the thread: {e}"
         if resp is not None:
-            error_msg += f" | Response: {resp.text}"
+            error_msg += f" | Response: {sanitize_api_key(resp.text, api_key)}"
         logger.error(error_msg)
         return None, None
 
     try:
         resp_json = resp.json()
     except ValueError as e:
-        logger.error(f"Thread create returned non-JSON: {e} | Response: {resp.text}")
+        logger.error(f"Thread create returned non-JSON: {e} | Response: {sanitize_api_key(resp.text, api_key)}")
         return None, None
 
     threadId = resp_json.get("thread_id")
@@ -85,7 +86,7 @@ def upload_information_to_thread(api_key: str, threadId: str, description: str, 
     except RequestException as e:
         error_msg = f"Error uploading the message: {e}"
         if resp is not None:
-            error_msg += f" | Response: {resp.text}"
+            error_msg += f" | Response: {sanitize_api_key(resp.text, api_key)}"
         logger.error(error_msg)
         return None
 
@@ -103,14 +104,14 @@ def get_assistant_response(api_key: str, threadId: str, max_attempts: int = 8, b
         except RequestException as e:
             error_msg = f"Error getting the thread: {e}"
             if resp is not None:
-                error_msg += f" | Response: {resp.text}"
+                error_msg += f" | Response: {sanitize_api_key(resp.text, api_key)}"
             logger.error(error_msg)
             return {}
 
         try:
             resp_json = resp.json()
         except ValueError as e:
-            logger.error(f"Error parsing thread response as JSON: {e} | Response: {resp.text}")
+            logger.error(f"Error parsing thread response as JSON: {e} | Response: {sanitize_api_key(resp.text, api_key)}")
             return {}
 
         messages = resp_json.get("messages")
@@ -131,9 +132,9 @@ def get_assistant_response(api_key: str, threadId: str, max_attempts: int = 8, b
                 else:
                     logger.error("Sorry, we encountered an unexpected content type")
                     return {}
-            if status in {"FAILED", "CANCELLED", "ERROR"}:
-                    logger.error("Sorry, the assistant message on thread was not retrieved")
-                    return {}
+            if lastMessage.get("status") in {"FAILED", "CANCELLED", "ERROR"}:
+                logger.error("Sorry, the assistant message on thread was not retrieved")
+                return {}
         
         if attempt < max_attempts:
             logger.info(f"Assistant did not respond on the given thread. Waiting {base_delay} before retrying")
