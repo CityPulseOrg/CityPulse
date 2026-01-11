@@ -28,6 +28,12 @@ class ReportStatus(str, Enum):
 class ReportStatusUpdate(BaseModel):
     status: ReportStatus
 
+class ReportUpdate(BaseModel):
+    report_id: UUID
+    title: str
+    description: str
+    status: ReportStatus
+
 class ReportInDB(Report):
     id: UUID
     status: ReportStatus = ReportStatus.NEW

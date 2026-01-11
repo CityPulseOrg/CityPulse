@@ -30,9 +30,9 @@ import uuid
 from fastapi import FastAPI, HTTPException, Form, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List
-from ai_workflow.workflow import run_backboard_ai
+from .ai_workflow.workflow import run_backboard_ai
 from . import crud
-from schemas import *
+from .schemas import *
 
 app = FastAPI(title="CityPulse API", version="1.0.0")
 
@@ -79,13 +79,15 @@ def create_report(
         longitude=longitude,
     )
 
-    reportId = str(uuid.uuid4())
+    reportId = uuid.uuid4()
 
     try:
         threadId, creationTime, aiResponse = run_backboard_ai(
         description=description,
         imageFiles=issueImages
         )
+        if threadId is None or creationTime is None or aiResponse == {}:
+            raise Exception
     except Exception as e:
         raise HTTPException(status_code=502, detail="AI workflow failed") from e
 
@@ -111,7 +113,7 @@ def list_reports(
 
 @app.get("/reports/{reportId}")
 def get_report(
-        reportId: str
+        reportId: UUID
 ):
     """Get a single report by ID."""
     report = crud.get_report(
@@ -125,18 +127,15 @@ def get_report(
 
 @app.put("/reports/{reportId}")
 def update_report_handler(
-        reportId: str,
-        title: Optional[str] = None,
-        description: Optional[str] = None,
-        status: Optional[str] = None
+        updated_report: ReportUpdate
 ):
     """Update a report."""
     report = crud.update_report(
         db=reportsDb,
-        report_id=reportId,
-        new_title=title,
-        new_description=description,
-        new_status=status
+        report_id=updated_report.report_id,
+        new_title=updated_report.title,
+        new_description=updated_report.description,
+        new_status=updated_report.status
     )
 
     if report is None:

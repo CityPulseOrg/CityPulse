@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 from typing import List
 from fastapi import UploadFile
 
+#TODO: add polling if necessary
 #TODO: Get Assistant ID and put it in the backboard url
 def create_thread(assistantId: str, api_key: str):
     response = requests.post(
@@ -26,12 +27,16 @@ def create_thread(assistantId: str, api_key: str):
 
     try:
         response.raise_for_status()
-    except requests.HTTPError as e:
-        print("Sorry, there was an error creating the thread: ")
-        print(response.text)
+    except requests.HTTPError:
+        logger.error("Sorry, there was an error creating the thread")
         return None, None
 
-    response = response.json()
+    try:
+        response = response.json()
+    except ValueError:
+        logger.error("Sorry, the thread create returned non-JSON")
+        return None, None
+
     threadId = response.get("thread_id")
     creationTime = response.get("created_at")
     if not threadId:

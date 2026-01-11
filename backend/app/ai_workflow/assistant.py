@@ -11,16 +11,16 @@ logger = logging.getLogger(__name__)
 
 #TODO: Make sure that timeout= can be used inside the API call
 def create_assistant():
-    apiKey = os.environ.get("BACKBOARD_API_KEY")
-    if not apiKey:
-        logger.error(BACKBOARD_API_KEY env variable not found or not set")
+    api_key = os.environ.get("BACKBOARD_API_KEY")
+    if not api_key:
+        logger.error("BACKBOARD_API_KEY env variable not found or not set")
         return None
 
     try:
         response = requests.post("https://app.backboard.io/api/assistants",
                       headers={
                           "Content-Type": "application/json",
-                          "X-API-Key": apiKey
+                          "X-API-Key": api_key
                       },
                       json={
                           "name": "CPAssistant",
@@ -109,19 +109,19 @@ def create_assistant():
                       },
                       timeout=30
                       )
+        response.raise_for_status()
     except RequestException:
-        logger.error("Sorry, there was an error creating the assistant: " + response.text)
+        logger.exception("Sorry, there was an error creating the assistant")
         return None
 
     try:
-        response = response.json()
+        response_json = response.json()
     except ValueError:
-        logger.error("Sorry, there was an error getting the json response "
-                     "while creating the assistant: " + response.text)
+        logger.exception("Sorry, there was an error parsing assistant creation response as JSON")
         return None
 
     logger.info("CPAssistant created successfully")
-    assistantId = response.get("assistant_id")
+    assistantId = response_json.get("assistant_id")
     if assistantId:
         logger.info("Assistant ID: " + assistantId)
     return assistantId
