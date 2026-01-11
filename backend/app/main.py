@@ -27,12 +27,14 @@ DOCS: use the Fast APi documentation: https://fastapi.tiangolo.com/tutorial/firs
 """
 
 import uuid
-from fastapi import FastAPI, HTTPException, Form, File, UploadFile
+from fastapi import FastAPI, HTTPException, Form, File, UploadFile, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
 from typing import Optional, List
 from ai_workflow.workflow import *
-from crud import *
-from schemas import *
+from database import get_db
+import crud
+from schemas import Report
 
 app = FastAPI(title="CityPulse API", version="1.0.0")
 
@@ -44,8 +46,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-#TODO: In-memory store for now (swap for DB once models are ready)
-reportsDb: dict = {}
 
 
 @app.get("/health")
@@ -83,12 +83,14 @@ def create_report(
     reportId = str(uuid.uuid4())
     threadId, creationTime, aiResponse = run_backboard_ai(description=description,
                                                           imageFiles=issueImages)
-    report = crud.create_report(db=reportsDb,
-                               userReport,
-                               aiResponse,
-                               reportId,
-                               threadId,
-                               creationTime)
+    report = crud.create_report(
+        db=reportsDb,
+        user_report=userReport,
+        ai_response=aiResponse,
+        report_id=reportId,
+        thread_id=threadId,
+        creation_time=creationTime
+    )
 
     return report
 
@@ -98,17 +100,17 @@ def list_reports(
     statusFilter: Optional[str] = None
 ):
     """List all reports."""
-    return crud.get_reports(db=reportsDb, statusFilter)
+    return crud.get_reports(db=reportsDb, status_filter=statusFilter)
 
 
 @app.get("/reports/{report_id}")
 def get_report(
-        reportId: str
+        report_id: str
 ):
     """Get a single report by ID."""
     report = crud.get_report(
         db=reportsDb,
-        issue_id=reportId
+        report_id=report_id
     )
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
@@ -118,28 +120,30 @@ def get_report(
 @app.put("/reports/{report_id}")
 def update_report(
         report_id: str,
+        db: Session = Depends(get_db),
         title: Optional[str] = None,
         description: Optional[str] = None,
         status: Optional[str] = None
 ):
     """Update a report."""
-    report = crud.get_report(
-        db=reportsDb,
-        issue_id=reportId
+    report = crud.update_report(
+        db=db,
+        report_id=report_id,
+        new_title=title,
+        new_description=description,
+        new_status=status
     )
 
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
 
-
-
     return report
 
 
-@app.delete("/reports/{report_id}")
-def delete_report(report_id: str):
+@app.delete("/reports/{report_id}", status_code=204)
+def delete_report(report_id: str, db: Session = Depends(get_db)):
     """Delete a report."""
-    if report_id not in reports_db:
+    deleted = crud.delete_report(db, report_id)
+    if not deleted:
         raise HTTPException(status_code=404, detail="Report not found")
-    del reports_db[report_id]
-    return {"detail": "Report deleted"}
+    return None

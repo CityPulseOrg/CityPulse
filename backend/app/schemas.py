@@ -2,14 +2,12 @@
 CityPulse Pydantic Schemas
 Request/response models for API validation.
 
-TODO: To be implemented by Zak
 """
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
 
-#TODO: Verify if need to create another class for status update (note de Zak)
 class Report(BaseModel):
     title: str
     description: str
@@ -20,7 +18,7 @@ class Report(BaseModel):
     longitude: Optional[float] = None
 
 class ReportInDB(Report):
-    id: int
+    id: UUID
     threadId: Optional[str] = None
     category: Optional[str] = None
     severity: Optional[str] = None
@@ -35,8 +33,8 @@ class ReportEvent(BaseModel):
     payload: Optional[str] = None
 
 class ReportEventInDB(ReportEvent):
-    id: int
-    reportId: int
+    id: UUID
+    reportId: UUID
     creationTime: datetime
 
     model_config = ConfigDict(from_attributes=True)

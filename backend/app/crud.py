@@ -1,42 +1,162 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from uuid import UUID
-
+from datetime import datetime, timezone
+from typing import Union, Optional
 from app import models
-from app.schemas import ReportCreate
+from app.schemas import Report
 
-
-def _parse_uuid(value: str):
+def _parse_uuid(value: str) -> Optional[UUID]:
     try:
         return UUID(value)
     except Exception:
         return None
 
+def _coerce_uuid(value: Union[str, UUID]) -> Optional[UUID]:
+    """Accept UUID or str; return UUID or None if invalid."""
+    if isinstance(value, UUID):
+        return value
+    return _parse_uuid(value)
 
-def create_report(db: Session, payload: ReportCreate) -> models.IssueTable:
+def _coerce_datetime(value: Union[str, datetime]) -> Optional[datetime]:
+    """Accept datetime or ISO string; return timezone-aware datetime or None if invalid."""
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value
+    try:
+        dt = datetime.fromisoformat(value)
+        if dt.tzinfo is None:
+            return dt.replace(tzinfo=timezone.utc)
+        return dt
+    except (ValueError, TypeError):
+        return None
+
+# -------------------------------
+# CREATE
+
+def create_report(
+        db: Session,
+        user_report: Report,
+        ai_response: dict,
+        report_id: Union[str, UUID],
+        thread_id: Union[str, UUID],
+        creation_time: Union[str, datetime]
+) -> models.IssueTable:
+    # Coerce report_id to UUID (model column is UUID)
+    coerced_report_id = _coerce_uuid(report_id)
+    if coerced_report_id is None:
+        raise ValueError(f"Invalid report_id: {report_id}")
+
+    # Convert thread_id to string (model column is String)
+    thread_id_str = str(thread_id) if thread_id is not None else None
+
+    # Coerce creation_time to timezone-aware datetime
+    coerced_creation_time = _coerce_datetime(creation_time)
+    if coerced_creation_time is None:
+        raise ValueError(f"Invalid creation_time: {creation_time}")
+
     report = models.IssueTable(
-        title=payload.title,
-        description=payload.description,
-        address=payload.address,
-        city=payload.city,
-        status=payload.status,
-        latitude=payload.latitude,
-        longitude=payload.longitude,
+        id=coerced_report_id,
+        title=user_report.title,
+        description=user_report.description,
+        address=user_report.address,
+        city=user_report.city,
+        status=user_report.status,
+        latitude=user_report.latitude,
+        longitude=user_report.longitude,
+        threadId=thread_id_str,
+        category=ai_response.get("classification"),
+        severity=ai_response.get("severity"),
+        priority=ai_response.get("priority"),
+        priority_score=ai_response.get("priority_score"),
+        needs_clarification=ai_response.get("needs_clarification"),
+        clarification=ai_response.get("clarification"),
+        #TODO: Add nbOfMatches here once the AI is programmed to get the number of matches
+        creationTime=coerced_creation_time,
     )
     db.add(report)
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise
     db.refresh(report)
     return report
 
 
-def get_reports(db: Session):
-    return db.query(models.IssueTable).order_by(models.IssueTable.creationTime.desc()).all()
+#-----------------
+# READ
+
+def get_reports(db: Session, status_filter: Optional[str] = None):
+    query = db.query(models.IssueTable)
+    if status_filter:
+        query = query.filter(models.IssueTable.status == status_filter)
+    return query.order_by(models.IssueTable.creationTime.desc()).all()
 
 
-def get_report(db: Session, report_id: str):
-    uid = _parse_uuid(report_id)
-    if uid is None:
+def get_report(db: Session, report_id: Union[str, UUID]) -> Optional[models.IssueTable]:
+    coerced_id = _coerce_uuid(report_id)
+    if coerced_id is None:
         return None
-    return db.query(models.IssueTable).filter(models.IssueTable.id == uid).first()
+    return db.query(models.IssueTable).filter(models.IssueTable.id == coerced_id).first()
 
-#delete/update
+# -------------------------
+# UPDATE
+
+def update_report(
+    db: Session,
+    report_id: Union[str, UUID],
+    new_title: Optional[str] = None,
+    new_description: Optional[str] = None,
+    new_status: Optional[str] = None,
+    new_address: Optional[str] = None,
+    new_city: Optional[str] = None,
+    new_latitude: Optional[float] = None,
+    new_longitude: Optional[float] = None
+) -> Optional[models.IssueTable]:
+    report = get_report(db, report_id)
+    if report is None:
+        return None
+
+    updates = {
+        "title": new_title,
+        "description": new_description,
+        "status": new_status,
+        "address": new_address,
+        "city": new_city,
+        "latitude": new_latitude,
+        "longitude": new_longitude,
+    }
+
+    for field, value in updates.items():
+        if value is not None:
+            setattr(report, field, value)
+
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise
+
+    db.refresh(report)
+    return report
+
+
+# -------------------------
+# DELETE
+
+def delete_report(db: Session, report_id: Union[str, UUID]) -> bool:
+    report = get_report(db, report_id)
+    if report is None:
+        return False
+
+    db.delete(report)
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise
+
+    return True
 
