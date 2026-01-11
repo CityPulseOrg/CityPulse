@@ -33,10 +33,14 @@ class IssueTable(Base):
     longitude = Column(Float, nullable=True)
 
     # AI-enriched fields
+    #TODO: Make sure that 'bool' is the right key word in needs_clarification column
     threadId = Column(String, nullable=True)     
     category = Column(String, nullable=True)
     severity = Column(String, nullable=True)
     priority = Column(String, nullable=True)
+    priority_score = Column(Integer, nullable=True)
+    needs_claification = Column(bool, nullable=True)
+    clarification = Column(String, nullable=True)
     nbOfMatches = Column(Integer, nullable=False, default=0)
 
     creationTime = Column(DateTime(timezone=True), default=utc_now, nullable=False)
