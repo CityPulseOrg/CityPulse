@@ -35,6 +35,7 @@ from typing import Optional, List
 from .ai_workflow.workflow import run_backboard_ai
 from . import crud
 from .schemas import *
+from .validators import validate_images
 
 app = FastAPI(title="CityPulse API", version="1.0.0")
 
@@ -72,6 +73,8 @@ def create_report(
     issueImages: List[UploadFile] = File(...),
 ):
     """Create a new report."""
+    validate_images(issueImages)
+
     userReport = Report(
         title=title,
         description=description,
