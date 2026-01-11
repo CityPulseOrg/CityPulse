@@ -76,7 +76,7 @@ def create_report(
         raise
     except Exception:
         logger.exception("Unexpected error in AI workflow")
-        raise HTTPException(status_code=502, detail="AI workflow failed")
+        raise HTTPException(status_code=502, detail="AI workflow failed") from None
 
     try:
         report = crud.create_report(
@@ -103,28 +103,28 @@ def list_reports(
     return crud.get_reports(db=db, status_filter=status)
 
 
-@app.get("/reports/{id}", response_model=IssueOut)
+@app.get("/reports/{report_id}", response_model=IssueOut)
 def get_report(
-    id: UUID,
+    report_id: UUID,
     db: Session = Depends(get_db),
 ):
     """Get a single report by ID."""
-    report = crud.get_report(db=db, report_id=id)
+    report = crud.get_report(db=db, report_id=report_id)
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
     return report
 
 
 # TODO: add authentication middleware and role check
-@app.put("/reports/{id}", response_model=IssueOut)
+@app.put("/reports/{report_id}", response_model=IssueOut)
 def update_report(
-    id: UUID,
+    report_id: UUID,
     updated_report: ReportUpdate,
     db: Session = Depends(get_db),
 ):
     """Update a report."""
-    if id != updated_report.report_id:
-        raise HTTPException(status_code=400, detail="Path id does not match body report_id")
+    if report_id != updated_report.report_id:
+        raise HTTPException(status_code=400, detail="Path report_id does not match body report_id")
 
     report = crud.update_report(
         db=db,
@@ -139,13 +139,13 @@ def update_report(
     return report
 
 
-@app.delete("/reports/{id}", status_code=204)
+@app.delete("/reports/{report_id}", status_code=204)
 def delete_report(
-    id: UUID,
+    report_id: UUID,
     db: Session = Depends(get_db),
 ):
     """Delete a report."""
-    deleted = crud.delete_report(db=db, report_id=id)
+    deleted = crud.delete_report(db=db, report_id=report_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Report not found")
     return None
