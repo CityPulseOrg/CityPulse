@@ -26,19 +26,27 @@ def create_report(
         db: Session,
         user_report: Report,
         ai_response: dict,
-        report_id: UUID,
-        thread_id: UUID,
+        report_id: Union[str, UUID],
+        thread_id: Union[str, UUID],
         creation_time: str
 ) -> models.IssueTable:
+    # Coerce report_id to UUID (model column is UUID)
+    coerced_report_id = _coerce_uuid(report_id)
+    if coerced_report_id is None:
+        raise ValueError(f"Invalid report_id: {report_id}")
+
+    # Convert thread_id to string (model column is String)
+    thread_id_str = str(thread_id) if thread_id is not None else None
+
     report = models.IssueTable(
-        id=report_id,
+        id=coerced_report_id,
         title=user_report.title,
         description=user_report.description,
         address=user_report.address,
         city=user_report.city,
         latitude=user_report.latitude,
         longitude=user_report.longitude,
-        threadId=thread_id,
+        threadId=thread_id_str,
         category=ai_response.get("classification"),
         severity=ai_response.get("severity"),
         priority=ai_response.get("priority"),
@@ -80,7 +88,11 @@ def update_report(
     report_id: Union[str, UUID],
     new_title: Optional[str] = None,
     new_description: Optional[str] = None,
-    new_status: Optional[str] = None
+    new_status: Optional[str] = None,
+    new_address: Optional[str] = None,
+    new_city: Optional[str] = None,
+    new_latitude: Optional[float] = None,
+    new_longitude: Optional[float] = None
 ) -> Optional[models.IssueTable]:
     report = get_report(db, report_id)
     if report is None:
@@ -90,6 +102,10 @@ def update_report(
         "title": new_title,
         "description": new_description,
         "status": new_status,
+        "address": new_address,
+        "city": new_city,
+        "latitude": new_latitude,
+        "longitude": new_longitude,
     }
 
     for field, value in updates.items():
