@@ -43,9 +43,9 @@ def create_report(
         severity=ai_response.get("severity"),
         priority=ai_response.get("priority"),
         priority_score=ai_response.get("priority_score"),
-        needs_clarification=ai_response.get("needs_clarification")
-        clarification=ai_response.get("clarification")
-        #TODO: Add nbOfmtaches here once the AI is programmed to get the number of matches
+        needs_clarification=ai_response.get("needs_clarification"),
+        clarification=ai_response.get("clarification"),
+        #TODO: Add nbOfMatches here once the AI is programmed to get the number of matches
         creationTime=creation_time,
     )
     db.add(report)

@@ -38,7 +38,7 @@ class IssueTable(Base):
     severity = Column(String, nullable=True)
     priority = Column(String, nullable=True)
     priority_score = Column(Integer, nullable=True)
-    needs_claification = Column(Boolean, nullable=True)
+    needs_clarification = Column(Boolean, nullable=True)
     clarification = Column(String, nullable=True)
     nbOfMatches = Column(Integer, nullable=False, default=0)
 
