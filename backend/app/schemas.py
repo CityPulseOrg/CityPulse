@@ -4,6 +4,7 @@ Request/response models for API validation.
 
 TODO: To be implemented by Zak
 """
+from enum import Enum
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional, List
@@ -18,12 +19,18 @@ class Report(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
 
+class ReportStatus(str, Enum):
+    NEW = "New"
+    IN_PROGRESS = "In Progress"
+    RESOLVED = "Resolved"
+    WAITING = "Waiting for user follow-up"
+
 class ReportStatusUpdate(BaseModel):
-    status: str
+    status: ReportStatus
 
 class ReportInDB(Report):
     id: UUID
-    status: str = "New"
+    status: ReportStatus = ReportStatus.NEW
     threadId: Optional[str] = None
     category: Optional[str] = None
     severity: Optional[str] = None

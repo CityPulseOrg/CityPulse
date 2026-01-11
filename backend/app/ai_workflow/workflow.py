@@ -6,16 +6,19 @@ creating threads for individual reports and adding issue images to existing thre
 import os
 import json
 import requests
+from requests import RequestException
+import logging
+logger = logging.getLogger(__name__)
 from typing import List
 from fastapi import UploadFile
 
 #TODO: Get Assistant ID and put it in the backboard url
-def create_thread(assistantId: str):
+def create_thread(assistantId: str, api_key: str):
     response = requests.post(
         f"https://app.backboard.io/api/assistants/{assistantId}/threads",
         headers={
             "Content-Type": "application/json",
-            "X-API-Key": os.environ.get("BACKBOARD_API_KEY")
+            "X-API-Key": api_key
         },
         json={},
         timeout=30
@@ -41,11 +44,11 @@ def create_thread(assistantId: str):
 
 # TODO: Make sure that Content-Type does not need to be defined and verify if requests lib will automatically set it
 # TODO: Need to finish the last part of the function
-def upload_information_to_thread(threadId: str, description: str, imageFiles: List[UploadFile]):
+def upload_information_to_thread(api_key: str, threadId: str, description: str, imageFiles: List[UploadFile]):
     backboardUrl = f"https://app.backboard.io/api/threads/{threadId}/messages"
     headers = {
             # "Content-Type": "multipart/form-data",
-            "X-API-Key": os.environ.get("BACKBOARD_API_KEY")
+            "X-API-Key": api_key
         }
     data = {
             "content": description,
@@ -75,12 +78,12 @@ def upload_information_to_thread(threadId: str, description: str, imageFiles: Li
         return None
 
 #TODO: Make sure that the timeout= is necessary in the API call
-def get_assistant_response(threadId: str):
+def get_assistant_response(api_key: str, threadId: str):
     try:
         thread = requests.get(
             f"https://app.backboard.io/api/threads/{threadId}",
             headers={
-                "X-API-Key": os.environ.get("BACKBOARD_API_KEY")
+                "X-API-Key": api_key
             },
             timeout=30
         )
@@ -90,7 +93,12 @@ def get_assistant_response(threadId: str):
         print(thread.text)
         return {}
 
-    thread = thread.json()
+    try:
+        thread = thread.json()
+    except ValueError:
+        logger.error("Sorry, there was a json error when getting the thread")
+        return {}
+
     messages = thread.get("messages")
     if not messages:
         return {}
@@ -98,21 +106,37 @@ def get_assistant_response(threadId: str):
     if lastMessage.get("role") == "assistant" and lastMessage.get("status") == "COMPLETED":
         content = lastMessage.get("content")
         if isinstance(content, str):
-            return json.loads(content)
+            try:
+                return json.loads(content)
+            except json.JSONDecodeError:
+                logger.error("Sorry, the json response from the assistant was invalid")
+                return {}
         elif isinstance(content, dict):
             return content
 
     return {}
 
 def run_backboard_ai(description: str, imageFiles: List[UploadFile]):
-    thread = create_thread(os.environ.get("BACKBOARD_ID"))
-    if not thread:
+    api_key = os.environ.get("BACKBOARD_API_KEY")
+    assistant_id = os.environ.get("ASSISTANT_ID")
+    if not api_key or not assistant_id:
+        logger.error("BACKBOARD_API_KEY or ASSISTANT_ID not found or could not be retrieved")
         return None, None, {}
-    threadId, creationTime = thread
-    uploaded_data = upload_information_to_thread(threadId, description, imageFiles)
-    if uploaded_data == None:
+
+    try:
+        thread = create_thread(assistant_id, api_key)
+        threadId, creationTime = thread
+        if threadId is None or creationTime is None:
+            return None, None, {}
+
+        uploaded_data = upload_information_to_thread(api_key, threadId, description, imageFiles)
+        if uploaded_data is None:
+            return None, None, {}
+
+        response = get_assistant_response(api_key, threadId)
+        return threadId, creationTime, response
+    except RequestException:
+        logger.error("Sorry, there was a request failure (timeout or connection error)")
         return None, None, {}
-    response = get_assistant_response(threadId)
-    return threadId, creationTime, response
 
 

@@ -30,8 +30,8 @@ import uuid
 from fastapi import FastAPI, HTTPException, Form, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List
-from ai_workflow.workflow import *
-from crud import create_report, get_report, get_reports, update_report, delete_report
+from ai_workflow.workflow import run_backboard_ai
+from . import crud
 from schemas import *
 
 app = FastAPI(title="CityPulse API", version="1.0.0")
@@ -87,9 +87,9 @@ def create_report(
         imageFiles=issueImages
         )
     except Exception as e:
-        raise HTTPException(status_code=404, detail=f"AI workflow failed: {e}")
+        raise HTTPException(status_code=502, detail="AI workflow failed") from e
 
-    report = create_report(
+    report = crud.create_report(
         reportsDb,
         userReport,
         aiResponse,
@@ -106,7 +106,7 @@ def list_reports(
     statusFilter: Optional[str] = None
 ):
     """List all reports."""
-    return get_reports(reportsDb, statusFilter)
+    return crud.get_reports(reportsDb, statusFilter)
 
 
 @app.get("/reports/{reportId}")
@@ -114,7 +114,7 @@ def get_report(
         reportId: str
 ):
     """Get a single report by ID."""
-    report = get_report(
+    report = crud.get_report(
         db=reportsDb,
         issue_id=reportId
     )
@@ -124,28 +124,34 @@ def get_report(
 
 
 @app.put("/reports/{reportId}")
-def update_report(
+def update_report_handler(
         reportId: str,
         title: Optional[str] = None,
         description: Optional[str] = None,
         status: Optional[str] = None
 ):
     """Update a report."""
-    report = update_report(
+    report = crud.update_report(
         db=reportsDb,
         report_id=reportId,
         new_title=title,
         new_description=description,
         new_status=status
     )
+
+    if report is None:
+        raise HTTPException(status_code=404, detail="Report not found")
     return report
 
 
 @app.delete("/reports/{reportId}")
-def delete_report(reportId: str):
+def delete_report_handler(reportId: str):
     """Delete a report."""
-    report_deleted = delete_report(
+    report_deleted = crud.delete_report(
         db=reportsDb,
         report_id=reportId,
     )
+
+    if report_deleted is None or report_deleted is False:
+        raise HTTPException(status_code=404, detail="Report not found")
     return report_deleted
