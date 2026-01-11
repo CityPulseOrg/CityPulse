@@ -2,14 +2,12 @@
 CityPulse Pydantic Schemas
 Request/response models for API validation.
 
-TODO: To be implemented by Zak
 """
 from enum import Enum
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
-
 
 class ClassificationEnum(str, Enum):
     POTHOLE = "pothole"
@@ -40,33 +38,34 @@ class PriorityEnum(str, Enum):
     VERY_URGENT = "very_urgent"
 
 
-#TODO: Verify if need to create another class for status update (note de Zak)
-class Report(BaseModel):
-    title: str
-    description: str
-    address: str
-    city: str
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-
 class ReportStatus(str, Enum):
     NEW = "New"
     IN_PROGRESS = "In Progress"
     RESOLVED = "Resolved"
     WAITING = "Waiting for user follow-up"
 
+
+# TODO: Verify if we need a separate status-update-only schema
+class Report(BaseModel):
+    title: str
+    description: str
+    address: str
+    city: str
+    status: ReportStatus = ReportStatus.NEW
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
 class ReportStatusUpdate(BaseModel):
     status: ReportStatus
 
 class ReportUpdate(BaseModel):
     report_id: UUID
-    title: str
-    description: str
-    status: ReportStatus
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[ReportStatus] = None
 
 class ReportInDB(Report):
     id: UUID
-    status: ReportStatus = ReportStatus.NEW
     threadId: Optional[str] = None
     category: Optional[ClassificationEnum] = None
     severity: Optional[SeverityEnum] = None
