@@ -48,6 +48,7 @@ export default function IssuePage({ params }: PageProps) {
           <Badge variant={issue.status === 'open' ? 'destructive' : 'default'}>{issue.status}</Badge>
         </CardHeader>
         <CardContent className="space-y-4">
+          {issue.title && <h2 className="text-xl font-semibold">{issue.title}</h2>}
           <p><strong>Description:</strong> {issue.description}</p>
           {issue.category && <p><strong>Category:</strong> {issue.category}</p>}
           {issue.priority && <p><strong>Priority:</strong> {issue.priority}</p>}

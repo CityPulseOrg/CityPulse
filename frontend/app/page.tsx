@@ -5,8 +5,11 @@ export default function Home() {
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold">CityPulse</h1>
-        <p className="text-lg">AI-powered civic issue reporting system</p>
+        <div className="text-5xl font-bold text-black dark:text-white">
+          CityPulse
+        </div>
+        <h1 className="text-3xl font-bold">AI-Powered Report Submision</h1>
+        <p className="text-lg">Report and track city problems with AI assistance</p>
         <div className="space-x-4">
           <Link href="/report">
             <Button>Report an Issue</Button>

@@ -9,8 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import LocationPicker from '@/components/LocationPicker'
 
 export default function ReportPage() {
+  const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [photos, setPhotos] = useState<File[]>([])
   const [lat, setLat] = useState<number | undefined>()
@@ -42,81 +44,91 @@ export default function ReportPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    mutation.mutate({ description, photos: photos.length > 0 ? photos : undefined, lat, lng })
+    mutation.mutate({ title: title || undefined, description, photos: photos.length > 0 ? photos : undefined, lat, lng })
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle>Report a Civic Issue</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe the issue..."
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="photos">Photos (optional, max 5, 5MB each)</Label>
-              <Input
-                id="photos"
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handleFileChange}
-              />
-              <div className="flex flex-wrap gap-2 mt-2">
-                {photos.map((file, index) => (
-                  <div key={index} className="relative">
-                    <img
-                      src={URL.createObjectURL(file)}
-                      alt={`Preview ${index}`}
-                      className="w-20 h-20 object-cover rounded"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removePhoto(index)}
-                      className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 text-xs"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="flex gap-2">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-8">
+      <div className="container mx-auto px-4">
+        {/* CityPulse Branding Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent mb-2">
+            CityPulse
+          </h1>
+          <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto rounded-full"></div>
+        </div>
+
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader>
+            <CardTitle>Report a Civic Issue</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="lat">Latitude (optional)</Label>
+                <Label htmlFor="title">Title (optional)</Label>
                 <Input
-                  id="lat"
-                  type="number"
-                  value={lat || ''}
-                  onChange={(e) => setLat(e.target.value ? parseFloat(e.target.value) : undefined)}
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Brief title for the issue"
                 />
               </div>
               <div>
-                <Label htmlFor="lng">Longitude (optional)</Label>
-                <Input
-                  id="lng"
-                  type="number"
-                  value={lng || ''}
-                  onChange={(e) => setLng(e.target.value ? parseFloat(e.target.value) : undefined)}
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe the issue..."
+                  required
                 />
               </div>
-            </div>
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? 'Analyzing report...' : 'Submit Report'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <div>
+                <Label htmlFor="photos">Photos (optional, max 5, 5MB each)</Label>
+                <Input
+                  id="photos"
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleFileChange}
+                />
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {photos.map((file, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={`Preview ${index}`}
+                        className="w-20 h-20 object-cover rounded"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(index)}
+                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 text-xs"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <Label>Location (optional)</Label>
+                <LocationPicker
+                  lat={lat}
+                  lng={lng}
+                  onLocationChange={(newLat, newLng) => {
+                    setLat(newLat)
+                    setLng(newLng)
+                  }}
+                />
+              </div>
+              <Button type="submit" disabled={mutation.isPending}>
+                {mutation.isPending ? 'Analyzing report...' : 'Submit Report'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

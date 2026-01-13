@@ -1,7 +1,8 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
-export async function createIssue(data: { description: string; photos?: File[]; lat?: number; lng?: number }): Promise<import('./types').CreateIssueResponse> {
+export async function createIssue(data: { title?: string; description: string; photos?: File[]; lat?: number; lng?: number }): Promise<import('./types').CreateIssueResponse> {
   const formData = new FormData();
+  if (data.title) formData.append('title', data.title);
   formData.append('description', data.description);
   if (data.lat !== undefined) formData.append('lat', data.lat.toString());
   if (data.lng !== undefined) formData.append('lng', data.lng.toString());
@@ -43,10 +44,11 @@ export async function updateIssueStatus(id: string, status: string): Promise<voi
   if (!res.ok) throw new Error('Failed to update status');
 }
 
-export async function getIssues(filters?: { status?: string; category?: string }): Promise<import('./types').IssueDetails[]> {
+export async function getIssues(filters?: { status?: string; category?: string; priority?: string }): Promise<import('./types').IssueDetails[]> {
   const params = new URLSearchParams();
   if (filters?.status) params.append('status', filters.status);
   if (filters?.category) params.append('category', filters.category);
+  if (filters?.priority) params.append('priority', filters.priority);
   const res = await fetch(`${API_BASE}/v1/issues?${params}`);
   if (!res.ok) throw new Error('Failed to get issues');
   return res.json();

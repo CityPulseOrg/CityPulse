@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Link from "next/link";
 import "./globals.css";
 import { Providers } from "./providers";
+import { Button } from "@/components/ui/button";
+import ChatWidget from "@/components/ChatWidget";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,9 +29,17 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen`}
       >
+        <header className="p-4">
+          <Link href="/">
+            <Button variant="ghost" size="sm" className="hover:bg-blue-100">
+              Home
+            </Button>
+          </Link>
+        </header>
         <Providers>{children}</Providers>
+        <ChatWidget />
       </body>
     </html>
   );

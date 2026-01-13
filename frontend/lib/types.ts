@@ -13,6 +13,7 @@ export interface Image {
 export interface CreateIssueResponse {
   id: string;
   status: string;
+  title?: string;
   clarification_questions?: ClarificationQuestion[];
   images?: Image[];
 }
@@ -20,9 +21,11 @@ export interface CreateIssueResponse {
 export interface IssueDetails {
   id: string;
   status: string;
+  title?: string;
   description: string;
   category?: string;
   priority?: string;
+  severity?: string;
   department?: string;
   images: Image[];
   clarification_questions?: ClarificationQuestion[];
