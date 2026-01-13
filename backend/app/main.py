@@ -63,6 +63,8 @@ def create_report(
     try:
         thread_id, creation_time, ai_response = run_backboard_ai(
             description=description,
+            latitude=latitude,
+            longitude=longitude,
             image_files=issue_images,
         )
         if thread_id is None or creation_time is None or ai_response == {}:
