@@ -13,7 +13,6 @@ class Settings(BaseSettings):
     database_url: str 
 
     # Backboard AI Integration
-    # TODO: read from env KEEP SECRET, DO NOT TOUCH
     backboard_api_key: str = "" 
     backboard_workflow_id: str = ""
     backboard_api_url: str = "https://api.backboard.ai"
