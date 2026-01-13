@@ -10,9 +10,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.ai_workflow.workflow import *
+from app.ai_workflow.workflow import run_backboard_ai
 from app.database import get_db
-from app.schemas import *
+from app.schemas import IssueOut, Report, ReportUpdate
 from app.validators import validate_images
 
 logger = logging.getLogger(__name__)

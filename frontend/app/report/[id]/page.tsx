@@ -19,7 +19,7 @@ export default function IssuePage({ params }: PageProps) {
   const queryClient = useQueryClient()
   const [answers, setAnswers] = useState<{ [key: string]: string }>({})
 
-  const { data: issue, isLoading } = useQuery({
+  const { data: issue, isLoading, isError } = useQuery({
     queryKey: ['issue', id],
     queryFn: () => getIssue(id),
   })
@@ -30,6 +30,9 @@ export default function IssuePage({ params }: PageProps) {
       queryClient.invalidateQueries({ queryKey: ['issue', id] })
       setAnswers({})
     },
+    onError: (error) => {
+      console.error('Failed to submit answers:', error)
+    },
   })
 
   const handleFollowupSubmit = (e: React.FormEvent) => {
@@ -38,6 +41,7 @@ export default function IssuePage({ params }: PageProps) {
   }
 
   if (isLoading) return <div>Loading...</div>
+  if (isError) return <div>Error loading the issue. Please try again.</div>
   if (!issue) return <div>Issue not found</div>
 
   return (

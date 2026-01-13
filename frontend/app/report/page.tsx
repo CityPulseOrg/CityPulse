@@ -14,7 +14,7 @@ import LocationPicker from '@/components/LocationPicker'
 export default function ReportPage() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [photos, setPhotos] = useState<File[]>([])
+  const [photos, setPhotos] = useState<{ id: string; file: File }[]>([])
   const [photoUrls, setPhotoUrls] = useState<string[]>([])
   const [lat, setLat] = useState<number | undefined>()
   const [lng, setLng] = useState<number | undefined>()
@@ -31,6 +31,10 @@ export default function ReportPage() {
     onSuccess: (data) => {
       router.push(`/report/${data.id}`)
     },
+    onError: (error) => {
+      console.error('Failed to submit error:', error)
+      alert('Failed to submit report. Please try again.')
+    },
   })
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,7 +45,11 @@ export default function ReportPage() {
         return
       }
       const validFiles = files.filter(file => file.size <= 5 * 1024 * 1024) // 5MB
-      setPhotos(prev => [...prev, ...validFiles])
+      const rejectedFiles = files.length - validFiles.length
+      if (rejectedFiles > 0) {
+        alert(`${rejectedFiles} file(s) exceeded 5MB and were not added.`)
+      }
+      setPhotos(prev => [...prev, ...validFiles.map(file => ({ id: crypto.randomUUID(), file }))])
     }
   }
 
@@ -100,8 +108,8 @@ export default function ReportPage() {
                   onChange={handleFileChange}
                 />
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {photos.map((file, index) => (
-                    <div key={index} className="relative">
+                  {photos.map(({ id, file }, index) => (
+                    <div key={id} className="relative">
                       <img
                         src={photoUrls[index]}
                         alt={`Preview ${index}`}
