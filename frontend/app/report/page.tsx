@@ -21,7 +21,7 @@ export default function ReportPage() {
   const router = useRouter()
 
   useEffect(() => {
-    const urls = photos.map(file => URL.createObjectURL(file))
+    const urls = photos.map(({ file }) => URL.createObjectURL(file))
     setPhotoUrls(urls)
     return () => urls.forEach(url => URL.revokeObjectURL(url))
   }, [photos])
@@ -59,7 +59,7 @@ export default function ReportPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    mutation.mutate({ title: title || undefined, description, photos: photos.length > 0 ? photos : undefined, lat, lng })
+    mutation.mutate({ title: title || undefined, description, photos: photos.length > 0 ? photos.map(p => p.file) : undefined, lat, lng })
   }
 
   return (
