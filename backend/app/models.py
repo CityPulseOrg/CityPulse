@@ -37,7 +37,7 @@ class IssueTable(Base):
     priority_score = Column(Integer, nullable=True)
     needs_clarification = Column(Boolean, nullable=True)
     clarification = Column(String, nullable=True)
-    nb_of_matches = Column(Integer, nullable=False, default=0)
+    number_of_matches = Column(Integer, nullable=False, default=0)
 
     creation_time = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)

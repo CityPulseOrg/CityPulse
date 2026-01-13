@@ -68,7 +68,7 @@ class ReportInDB(Report):
     category: Optional[ClassificationEnum] = None
     severity: Optional[SeverityEnum] = None
     priority: Optional[PriorityEnum] = None
-    nb_of_matches: int = 0
+    number_of_matches: int = 0
     creation_time: datetime
 
     model_config = ConfigDict(from_attributes=True, use_enum_values=True)

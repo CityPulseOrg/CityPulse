@@ -70,7 +70,7 @@ def create_report(
         priority_score=ai_response.get("priority_score"),
         needs_clarification=ai_response.get("needs_clarification"),
         clarification=ai_response.get("clarification"),
-        #TODO: Add nbOfMatches here once the AI is programmed to get the number of matches
+        number_of_matches=ai_response.get("number_of_matches"),
         creation_time=coerced_creation_time,
     )
     db.add(report)

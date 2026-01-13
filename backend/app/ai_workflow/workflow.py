@@ -67,7 +67,7 @@ def upload_information_to_thread(api_key: str, thread_id: str, description: str,
             "llm_provider": "openai",
             "model_name": "gpt-5",
             "stream": "false",
-            "memory": "Auto",
+            "memory": "Readonly",
             "web_search": "off",
             "send_to_llm": "true",
             "metadata": ""
