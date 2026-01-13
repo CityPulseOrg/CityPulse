@@ -49,8 +49,6 @@ class ReportStatus(str, Enum):
 class Report(BaseModel):
     title: str
     description: str
-    address: str
-    city: str
     status: ReportStatus = ReportStatus.NEW
     latitude: Optional[float] = None
     longitude: Optional[float] = None

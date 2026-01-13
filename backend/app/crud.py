@@ -60,8 +60,6 @@ def create_report(
         id=coerced_report_id,
         title=user_report.title,
         description=user_report.description,
-        address=user_report.address,
-        city=user_report.city,
         status=user_report.status,
         latitude=user_report.latitude,
         longitude=user_report.longitude,

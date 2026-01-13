@@ -43,8 +43,6 @@ def root():
 def create_report(
     title: str = Form(...),
     description: str = Form(...),
-    address: str = Form(...),
-    city: str = Form(...),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
     issue_images: List[UploadFile] = File(...),
@@ -56,8 +54,6 @@ def create_report(
     userReport = Report(
         title=title,
         description=description,
-        address=address,
-        city=city,
         latitude=latitude,
         longitude=longitude,
     )

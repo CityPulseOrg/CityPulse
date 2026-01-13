@@ -23,8 +23,6 @@ class IssueTable(Base):
     # Core user report fields (match schemas.Report / ReportInDB)
     title = Column(String, nullable=False)
     description = Column(Text, nullable=False)
-    address = Column(String, nullable=False)
-    city = Column(String, nullable=False)
 
     status = Column(String, nullable=False, default="New")
 

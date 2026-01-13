@@ -4,14 +4,14 @@ export async function createIssue(data: { title?: string; description: string; p
   const formData = new FormData();
   if (data.title) formData.append('title', data.title);
   formData.append('description', data.description);
-  if (data.lat !== undefined) formData.append('lat', data.lat.toString());
-  if (data.lng !== undefined) formData.append('lng', data.lng.toString());
+  if (data.lat !== undefined) formData.append('latitude', data.lat.toString());
+  if (data.lng !== undefined) formData.append('longitude', data.lng.toString());
   if (data.photos) {
     data.photos.forEach((file) => {
-      formData.append('photos', file);
+      formData.append('issue_images', file);
     });
   }
-  const res = await fetch(`${API_BASE}/v1/issues`, {
+  const res = await fetch(`${API_BASE}/reports`, {
     method: 'POST',
     body: formData,
   });
