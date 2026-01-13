@@ -32,7 +32,7 @@ export default function ReportPage() {
       router.push(`/report/${data.id}`)
     },
     onError: (error) => {
-      console.error('Failed to submit error:', error)
+      console.error('Failed to submit report:', error)
       alert('Failed to submit report. Please try again.')
     },
   })
