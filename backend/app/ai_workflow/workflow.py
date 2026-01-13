@@ -56,14 +56,18 @@ def create_thread(assistant_id: str, api_key: str):
 
 # TODO: Make sure that Content-Type does not need to be defined and verify if requests lib will automatically set it
 # TODO: Need to finish the last part of the function
-def upload_information_to_thread(api_key: str, thread_id: str, description: str, latitude: float, longitude: float, image_files: List[UploadFile]):
+def upload_information_to_thread(api_key: str, thread_id: str, description: str, latitude: Optional[float], longitude: Optional[float], image_files: List[UploadFile]):
     backboard_url = f"https://app.backboard.io/api/threads/{thread_id}/messages"
     headers = {
             # "Content-Type": "multipart/form-data",
             "X-API-Key": api_key
         }
+    content = [f"Description: {description}"]
+    if latitude is not None and longitude is not None:
+        content.append(f"Latitude: {latitude}")
+        content.append(f"Longitude: {longitude}")
     data = {
-            "content": (f"Description: {description}\nLatitude: {latitude}\nLongitude: {longitude}"),
+            "content": "\n".join(content),
             "llm_provider": "openai",
             "model_name": "gpt-5",
             "stream": "false",
