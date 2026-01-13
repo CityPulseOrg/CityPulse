@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { createIssue } from '@/lib/api'
@@ -15,9 +15,16 @@ export default function ReportPage() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [photos, setPhotos] = useState<File[]>([])
+  const [photoUrls, setPhotoUrls] = useState<string[]>([])
   const [lat, setLat] = useState<number | undefined>()
   const [lng, setLng] = useState<number | undefined>()
   const router = useRouter()
+
+  useEffect(() => {
+    const urls = photos.map(file => URL.createObjectURL(file))
+    setPhotoUrls(urls)
+    return () => urls.forEach(url => URL.revokeObjectURL(url))
+  }, [photos])
 
   const mutation = useMutation({
     mutationFn: createIssue,
@@ -96,7 +103,7 @@ export default function ReportPage() {
                   {photos.map((file, index) => (
                     <div key={index} className="relative">
                       <img
-                        src={URL.createObjectURL(file)}
+                        src={photoUrls[index]}
                         alt={`Preview ${index}`}
                         className="w-20 h-20 object-cover rounded"
                       />

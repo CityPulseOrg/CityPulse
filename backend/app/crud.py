@@ -1,13 +1,8 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from uuid import UUID
-<<<<<<< Updated upstream
 from datetime import datetime, timezone
 from typing import Union, Optional
-=======
-from typing import Optional
-
->>>>>>> Stashed changes
 from app import models
 from app.schemas import Report
 
@@ -61,7 +56,6 @@ def create_report(
     if coerced_creation_time is None:
         raise ValueError(f"Invalid creation_time: {creation_time}")
 
-<<<<<<< Updated upstream
     report = models.IssueTable(
         id=coerced_report_id,
         title=user_report.title,
@@ -80,31 +74,6 @@ def create_report(
         clarification=ai_response.get("clarification"),
         #TODO: Add nbOfMatches here once the AI is programmed to get the number of matches
         creation_time=coerced_creation_time,
-=======
-def create_report_with_ai(
-    db: Session,
-    userReport: Report,
-    aiResponse: dict,
-    threadId: str,
-    priority: str,
-    risk: str,
-    category: Optional[str] = None
-) -> models.IssueTable:
-    """Create a report with AI-enriched data including priority and risk assessment."""
-    report = models.IssueTable(
-        title=userReport.title,
-        description=userReport.description,
-        address="",  # TODO: Add address field to Report schema
-        city="",     # TODO: Add city field to Report schema
-        status="open",
-        latitude=userReport.latitude,
-        longitude=userReport.longitude,
-        threadId=threadId,
-        category=category,
-        priority=priority,
-        severity=risk,  # Using severity field for risk level
-        nbOfMatches=0
->>>>>>> Stashed changes
     )
     db.add(report)
     try:
@@ -116,34 +85,22 @@ def create_report_with_ai(
     return report
 
 
-<<<<<<< Updated upstream
-#-----------------
-# READ
-
-def get_reports(db: Session, status_filter: Optional[str] = None):
-    query = db.query(models.IssueTable)
-    if status_filter:
-        query = query.filter(models.IssueTable.status == status_filter)
-    return query.order_by(models.IssueTable.creation_time.desc()).all()
-=======
 def get_reports(
     db: Session,
-    statusFilter: Optional[str] = None,
-    priorityFilter: Optional[str] = None,
-    categoryFilter: Optional[str] = None
+    status_filter: Optional[str] = None,
+    priority_filter: Optional[str] = None,
+    category_filter: Optional[str] = None
 ):
-    """Get reports with optional filtering."""
     query = db.query(models.IssueTable)
 
-    if statusFilter:
-        query = query.filter(models.IssueTable.status == statusFilter)
-    if priorityFilter:
-        query = query.filter(models.IssueTable.priority == priorityFilter)
-    if categoryFilter:
-        query = query.filter(models.IssueTable.category == categoryFilter)
+    if status_filter:
+        query = query.filter(models.IssueTable.status == status_filter)
+    if priority_filter:
+        query = query.filter(models.IssueTable.priority == priority_filter)
+    if category_filter:
+        query = query.filter(models.IssueTable.category == category_filter)
 
-    return query.order_by(models.IssueTable.creationTime.desc()).all()
->>>>>>> Stashed changes
+    return query.order_by(models.IssueTable.creation_time.desc()).all()
 
 
 def get_report(db: Session, report_id: Union[str, UUID]) -> Optional[models.IssueTable]:

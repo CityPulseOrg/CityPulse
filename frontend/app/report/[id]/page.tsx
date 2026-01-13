@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, use } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getIssue, followupIssue } from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -10,12 +10,12 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { ClarificationQuestion } from '@/lib/types'
 
-interface PageProps {
-  params: { id: string }
+type PageProps =  {
+  params: Promise<{ id: string }>
 }
 
 export default function IssuePage({ params }: PageProps) {
-  const { id } = params
+  const { id } = use(params)
   const queryClient = useQueryClient()
   const [answers, setAnswers] = useState<{ [key: string]: string }>({})
 
