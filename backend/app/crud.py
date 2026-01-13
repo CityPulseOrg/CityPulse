@@ -65,7 +65,7 @@ def create_report(
         status=user_report.status,
         latitude=user_report.latitude,
         longitude=user_report.longitude,
-        threadId=thread_id_str,
+        thread_id=thread_id_str,
         category=ai_response.get("classification"),
         severity=ai_response.get("severity"),
         priority=ai_response.get("priority"),
@@ -73,7 +73,7 @@ def create_report(
         needs_clarification=ai_response.get("needs_clarification"),
         clarification=ai_response.get("clarification"),
         #TODO: Add nbOfMatches here once the AI is programmed to get the number of matches
-        creationTime=coerced_creation_time,
+        creation_time=coerced_creation_time,
     )
     db.add(report)
     try:
@@ -92,7 +92,7 @@ def get_reports(db: Session, status_filter: Optional[str] = None):
     query = db.query(models.IssueTable)
     if status_filter:
         query = query.filter(models.IssueTable.status == status_filter)
-    return query.order_by(models.IssueTable.creationTime.desc()).all()
+    return query.order_by(models.IssueTable.creation_time.desc()).all()
 
 
 def get_report(db: Session, report_id: Union[str, UUID]) -> Optional[models.IssueTable]:
