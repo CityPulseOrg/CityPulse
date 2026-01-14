@@ -29,14 +29,10 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-citypulse}
       - POSTGRES_DB=${POSTGRES_DB:-citypulse}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-citypulse}:${POSTGRES_PASSWORD:-citypulse}@db:5432/${POSTGRES_DB:-citypulse}
-<<<<<<< HEAD
       # BACKBOARD_API_KEY=${BACKBOARD_API_KEY}
       # BACKBOARD_WORKFLOW_ID=${BACKBOARD_WORKFLOW_ID}
     env_file:
       - .env
-=======
-      - BACKBOARD_API_KEY=${BACKBOARD_API_KEY}
->>>>>>> ff34da3cbe8b37e7a896ed2aeaa5698944ff5850
     depends_on:
       db:
         condition: service_healthy
