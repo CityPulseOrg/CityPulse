@@ -10,9 +10,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.ai_workflow.workflow import run_backboard_ai
+from app.ai_workflow.workflow import run_backboard_ai, ai_followup
 from app.database import get_db
-from app.schemas import ReportInDB, Report, ReportUpdate
+from app.schemas import ReportInDB, Report, ReportUpdate, ReportFollowup
 from app.validators import validate_images
 
 logger = logging.getLogger(__name__)
@@ -50,6 +50,17 @@ def create_report(
 ):
     """Create a new report."""
     validate_images(issue_images)
+    saved_filenames = []
+    for file in issue_images:
+        contents = await file.read()
+        filename = f"{uuid.uuid4()}_{file.filename}"
+
+        # Save to local storage (or S3, etc.)
+        with open(f"uploads/{filename}", "wb") as f:
+        f.write(contents)
+
+    saved_filenames.append(filename)
+
 
     userReport = Report(
         title=title,
@@ -90,6 +101,25 @@ def create_report(
         raise HTTPException(status_code=500, detail="Failed to create report")
 
     return report
+
+@app.post("/reports/{report_id}/followup")
+def make_followup(
+    report_id: UUID,
+    answers: ReportFollowup,
+    db: Session = Depends(get_db)
+):
+    report = crud.get_report(db=db, report_id=report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    
+    clarification = answers.answers
+    result = ai_followup(
+        thread_id=report.thread_id,
+        description=clarification.get("description"),
+        latitude=clarification.get("latitude"),
+        longitude=clarification.get("longitude"),
+        image_files=report.
+    )
 
 
 @app.get("/reports", response_model=List[ReportInDB])

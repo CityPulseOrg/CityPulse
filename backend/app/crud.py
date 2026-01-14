@@ -63,6 +63,7 @@ def create_report(
         status=user_report.status,
         latitude=user_report.latitude,
         longitude=user_report.longitude,
+        report_images=user_report.images,
         thread_id=thread_id_str,
         category=ai_response.get("classification"),
         severity=ai_response.get("severity"),
@@ -116,8 +117,6 @@ def update_report(
     new_title: Optional[str] = None,
     new_description: Optional[str] = None,
     new_status: Optional[str] = None,
-    new_address: Optional[str] = None,
-    new_city: Optional[str] = None,
     new_latitude: Optional[float] = None,
     new_longitude: Optional[float] = None
 ) -> Optional[models.IssueTable]:
@@ -129,8 +128,6 @@ def update_report(
         "title": new_title,
         "description": new_description,
         "status": new_status,
-        "address": new_address,
-        "city": new_city,
         "latitude": new_latitude,
         "longitude": new_longitude,
     }

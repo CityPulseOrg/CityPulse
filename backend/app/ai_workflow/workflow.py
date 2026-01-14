@@ -172,5 +172,23 @@ def run_backboard_ai(description: str, latitude: float, longitude: float, image_
     except RequestException as e:
         logger.error(f"Request failure in AI workflow: {e}")
         return None, None, {}
+    
+def ai_followup(thread_id: str, description: str, latitude: float, longitude: float, image_files: List[UploadFile]):
+    api_key = os.environ.get("BACKBOARD_API_KEY")
+    assistant_id = os.environ.get("ASSISTANT_ID")
+    if not api_key or not assistant_id:
+        logger.error("BACKBOARD_API_KEY or ASSISTANT_ID not found or could not be retrieved")
+        return None, None, {}
+    
+    try:
+        uploaded_data = upload_information_to_thread(api_key, thread_id, description, latitude, longitude, image_files):
+        if uploaded_data is None:
+            return None, None, {}
+        
+        ai_response = get_assistant_response(api_key, thread_id)
+        return ai_response
+    except RequestException as e:
+        logger.error(f"Request failure in AI workflow: {e}")
+        return {}
 
 

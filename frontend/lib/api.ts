@@ -26,7 +26,7 @@ export async function getIssue(id: string): Promise<import('./types').IssueDetai
 }
 
 export async function followupIssue(id: string, answers: { [key: string]: string }): Promise<import('./types').IssueDetails> {
-  const res = await fetch(`${API_BASE}/v1/issues/${id}/followup`, {
+  const res = await fetch(`${API_BASE}/reports/${id}/followup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ answers }),

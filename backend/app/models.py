@@ -4,9 +4,9 @@ SQLAlchemy models for the civic issue reporting system.
 
 """
 import uuid
-from datetime import datetime, timezone 
+from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, ForeignKey, String, Text, Float, Integer, Boolean
+from sqlalchemy import Column, DateTime, ForeignKey, String, Text, Float, Integer, Boolean, ARRAY
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -28,6 +28,7 @@ class IssueTable(Base):
 
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
+    report_images = Column(ARRAY(String), nullable=True, default=[])
 
     # AI-enriched fields
     thread_id = Column(String, nullable=True)     
