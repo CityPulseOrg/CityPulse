@@ -50,8 +50,8 @@ export async function followupIssue(id: string, answers: { [key: string]: string
 }
 
 export async function updateIssueStatus(id: string, status: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/v1/issues/${id}`, {
-    method: 'PATCH',
+  const res = await fetch(`${API_BASE}/v1/reports/${id}`, {
+    method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status }),
   });
@@ -63,7 +63,7 @@ export async function getIssues(filters?: { status?: string; category?: string; 
   if (filters?.status) params.append('status', filters.status);
   if (filters?.category) params.append('category', filters.category);
   if (filters?.priority) params.append('priority', filters.priority);
-  const res = await fetch(`${API_BASE}/v1/issues?${params}`);
+  const res = await fetch(`${API_BASE}/v1/reports?${params}`);
   if (!res.ok) throw new Error('Failed to get issues');
   return res.json();
 }
