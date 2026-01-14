@@ -24,9 +24,11 @@ services:
     ports:
       - "8000:8000"
     environment:
+      - POSTGRES_USER=${POSTGRES_USER:-citypulse}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-citypulse}
+      - POSTGRES_DB=${POSTGRES_DB:-citypulse}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-citypulse}:${POSTGRES_PASSWORD:-citypulse}@db:5432/${POSTGRES_DB:-citypulse}
       - BACKBOARD_API_KEY=${BACKBOARD_API_KEY}
-      - BACKBOARD_WORKFLOW_ID=${BACKBOARD_WORKFLOW_ID}
     depends_on:
       db:
         condition: service_healthy

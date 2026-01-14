@@ -6,10 +6,32 @@ on:
   push:
     branches: [ "main" ]
 
+env:
+  # CI-only database credentials (not secrets, safe for PRs)
+  POSTGRES_USER: ci_user
+  POSTGRES_PASSWORD: ci_password
+  POSTGRES_DB: ci_citypulse
+
 jobs:
 #Later add test, lint, security-scan
   build:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+        ports:
+          - 5432:5432
+        # NOTE: The pg_isready username must be kept in sync with POSTGRES_USER env var above
+        options: >-
+          --health-cmd="pg_isready -U ci_user"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     steps:
       - name: Checkout code
@@ -17,4 +39,44 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t citypulse:${{ github.sha }} -f backend/Dockerfile backend
+
+      - name: Verify secrets are configured
+        if: github.event_name == 'push'
+        env:
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          BACKBOARD_API_KEY: ${{ secrets.BACKBOARD_API_KEY }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        run: python scripts/verify_secrets.py
+
+      - name: Run container
+        env:
+          # Keep values out of the command line/logs; pass by variable name instead.
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+          DATABASE_URL: postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@postgres:5432/${{ env.POSTGRES_DB }}
+          BACKBOARD_API_KEY: ${{ github.event_name == 'push' && secrets.BACKBOARD_API_KEY || '' }}
+        run: |
+          docker run -d --name citypulse-test \
+            --add-host=postgres:host-gateway \
+            -p 8000:8000 \
+            -e POSTGRES_USER \
+            -e POSTGRES_PASSWORD \
+            -e POSTGRES_DB \
+            -e DATABASE_URL \
+            -e BACKBOARD_API_KEY \
+            citypulse:${{ github.sha }}
+
+      - name: Wait for API and health check
+        run: python scripts/health_check.py citypulse-test
+
+      - name: Verify secrets injected
+        if: github.event_name == 'push'
+        run: python scripts/verify_secrets.py --container citypulse-test
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f citypulse-test || true
 

@@ -14,6 +14,32 @@ cp .env.example .env
 docker compose up --build
 ```
 
+## Environment Setup
+
+- Copy the example file and edit your values: `cp .env.example .env`
+- Variables used locally and in CI:
+   - POSTGRES_USER: database username (e.g., `citypulse`)
+   - POSTGRES_PASSWORD: database password (e.g., `citypulse`)
+   - POSTGRES_DB: database name (e.g., `citypulse`)
+   - DATABASE_URL: local-only connection (outside Docker): `postgresql://citypulse:citypulse@localhost:5432/citypulse`
+   - BACKBOARD_API_KEY: Backboard API key (secret)
+   - BACKBOARD_WORKFLOW_ID: optional Backboard workflow ID (if applicable)
+   - BACKBOARD_API_URL: Backboard API base URL (default `https://api.backboard.ai`)
+   - VITE_API_URL: frontend’s API base URL (e.g., `http://localhost:8000`)
+
+### GitHub Secrets (Actions → Secrets and variables → Actions)
+
+Add these repository secrets so CI can verify and inject them:
+- POSTGRES_USER
+- POSTGRES_PASSWORD
+- POSTGRES_DB
+- BACKBOARD_API_KEY
+- VITE_API_URL
+
+Recommendation:
+- Use the same values as your local `.env` for POSTGRES_* to keep consistency.
+- Set `VITE_API_URL` to `http://localhost:8000` for preview builds, or your deployed URL per environment.
+
 ## Docker Commands
 
 ```bash
@@ -49,6 +75,28 @@ docker compose up --build backend
 docker compose ps
 ```
 
+## Run Outside Docker (Local Dev)
+
+If you prefer to run the backend without Docker:
+
+```bash
+# 1) Ensure Postgres is running locally and .env is set
+cp .env.example .env
+# Verify DATABASE_URL points to localhost:5432
+
+# 2) Create a virtual environment and install deps
+python -m venv .venv
+source .venv/bin/activate
+pip install -r backend/requirements.txt
+
+# 3) Start the API from the repo root so .env is loaded
+uvicorn backend.app.main:app --reload --port 8000
+```
+
+Notes:
+- Running from the repo root ensures `.env` is picked up by the app settings.
+- Use `http://localhost:8000/health` to confirm DB connectivity.
+
 ## Services
 
 | Service  | URL                          |
@@ -57,6 +105,13 @@ docker compose ps
 | Backend  | http://localhost:8000        |
 | API Docs | http://localhost:8000/docs   |
 | Health   | http://localhost:8000/health |
+
+## Database Connection
+
+- Local tools: postgresql://citypulse:citypulse@localhost:5432/citypulse
+- Inside Docker: postgresql://citypulse:citypulse@db:5432/citypulse
+- Hostnames: use `localhost` from your machine; use `db` from containers
+- Port: 5432 is published to the host by docker-compose
 
 ## Architecture
 
@@ -91,5 +146,4 @@ Citizens -> Frontend -> Backend API -> Backboard AI Workflow
 | POSTGRES_PASSWORD     | Database password              |
 | POSTGRES_DB           | Database name                  |
 | BACKBOARD_API_KEY     | Backboard API key              |
-| BACKBOARD_WORKFLOW_ID | Backboard workflow ID          |
 | VITE_API_URL          | Backend URL for frontend       |
