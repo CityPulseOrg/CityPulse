@@ -34,8 +34,36 @@ app.add_middleware(
 
 @app.get("/health")
 def health():
-    """Health check endpoint - required for Docker."""
-    return {"status": "healthy", "service": "citypulse-backend"}
+    """Health check endpoint - required for Docker.
+    Tries a trivial DB query; returns 503 if connection fails.
+    """
+    try:
+        # Import inline to avoid circulars during app startup
+        from sqlalchemy import create_engine, text
+        from app.config import get_settings
+
+        settings = get_settings()
+        engine = create_engine(settings.database_url, pool_pre_ping=True)
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+
+        return {
+            "status": "healthy",
+            "service": "citypulse-backend",
+            "database": "ok",
+        }
+    except Exception as exc:
+        # Surface an unhealthy status for Docker healthcheck
+        logger.error("Health check failed: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "unhealthy",
+                "service": "citypulse-backend",
+                "database": "error",
+                "error": "database connection failed",
+            },
+        ) from None
 
 
 @app.get("/")
