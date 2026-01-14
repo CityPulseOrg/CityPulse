@@ -91,6 +91,9 @@ async def create_report(
         with open(UPLOAD_DIR / filename, "wb") as f:
             f.write(contents)
         saved_filenames.append(filename)
+        
+        # Seek back to the start so the file can be read again
+        await file.seek(0)
     
     input_report = Report(
         title=title,
