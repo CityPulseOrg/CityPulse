@@ -1,50 +1,31 @@
-"""
-CityPulse Backend API
+"""CityPulse Backend API."""
 
-================================================================================
-TODO: Backend team (Zak/Bala) - Implement the FastAPI application here.
-
-REQUIREMENTS:
-1. Create FastAPI app instance
-2. Add CORS middleware (frontend needs to call this API)
-3. Wire up database connection from app/database.py
-4. Implement /health endpoint (REQUIRED for Docker healthcheck)
-   - Must return JSON: {"status": "healthy", "service": "citypulse-backend"}
-   - Should test database connectivity
-5. Implement your report endpoints (POST /reports, GET /reports, etc.)
-6. Integrate Backboard AI workflow calls using config from app/config.py
-
-EXAMPLE MINIMAL SETUP:
-    from fastapi import FastAPI
-    app = FastAPI(title="CityPulse API")
-
-    @app.get("/health")
-    def health():
-        return {"status": "healthy", "service": "citypulse-backend"}
-
-DOCS: use the Fast APi documentation: https://fastapi.tiangolo.com/tutorial/first-steps/
-================================================================================
-"""
-
+import logging
 import uuid
-from fastapi import FastAPI, HTTPException, Form, File, UploadFile
+from typing import List, Optional
+from uuid import UUID
+
+from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional, List
-from . import crud
-from . import schemas
+from sqlalchemy.orm import Session
+
+from app import crud
+from app.ai_workflow.workflow import run_backboard_ai
+from app.database import get_db
+from app.schemas import IssueOut, Report, ReportUpdate
+from app.validators import validate_images
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="CityPulse API", version="1.0.0")
 
-#TODO: will need to change origins, method and headers for prod
+# TODO: tighten origins/methods/headers for prod
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-#TODO: In-memory store for now (swap for DB once models are ready)
-reportsDb: dict = {}
 
 
 @app.get("/health")
@@ -80,24 +61,26 @@ def health():
         )
 
 
-
 @app.get("/")
 def root():
     return {"message": "CityPulse API", "docs": "/docs"}
 
 
-@app.post("/reports")
+@app.post("/reports", response_model=IssueOut)
 def create_report(
     title: str = Form(...),
     description: str = Form(...),
     address: str = Form(...),
     city: str = Form(...),
-    latitude: Optional[float] = None,
-    longitude: Optional[float] = None,
-    issueImages: List[UploadFile] = File(...),
+    latitude: Optional[float] = Form(None),
+    longitude: Optional[float] = Form(None),
+    issue_images: List[UploadFile] = File(...),
+    db: Session = Depends(get_db),
 ):
     """Create a new report."""
-    userReport = schemas.Report(
+    validate_images(issue_images)
+
+    userReport = Report(
         title=title,
         description=description,
         address=address,
@@ -106,70 +89,90 @@ def create_report(
         longitude=longitude,
     )
 
-    reportId = str(uuid.uuid4())
-    # TODO: Implement AI workflow
-    # threadId, creationTime, aiResponse = run_backboard_ai(description=description,
-    #                                                       imageFiles=issueImages)
-    threadId = None
-    creationTime = None
-    aiResponse = None
-    report = crud.create_report(reportsDb,
-                               userReport,
-                               aiResponse,
-                               reportId,
-                               threadId,
-                               creationTime)
+    report_id = uuid.uuid4()
+
+    try:
+        thread_id, creation_time, ai_response = run_backboard_ai(
+            description=description,
+            image_files=issue_images,
+        )
+        if thread_id is None or creation_time is None or ai_response == {}:
+            logger.error("AI workflow returned an invalid response")
+            raise HTTPException(status_code=502, detail="AI workflow failed")
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Unexpected error in AI workflow")
+        raise HTTPException(status_code=502, detail="AI workflow failed") from None
+
+    try:
+        report = crud.create_report(
+            db=db,
+            user_report=userReport,
+            ai_response=ai_response,
+            report_id=report_id,
+            thread_id=thread_id,
+            creation_time=creation_time,
+        )
+    except Exception:
+        logger.exception("Failed to persist report")
+        raise HTTPException(status_code=500, detail="Failed to create report")
 
     return report
 
 
-@app.get("/reports")
+@app.get("/reports", response_model=List[IssueOut])
 def list_reports(
-    statusFilter: Optional[str] = None
+    status: Optional[str] = None,
+    db: Session = Depends(get_db),
 ):
     """List all reports."""
-    return crud.get_reports(reportsDb, statusFilter)
+    return crud.get_reports(db=db, status_filter=status)
 
 
-@app.get("/reports/{report_id}")
+@app.get("/reports/{report_id}", response_model=IssueOut)
 def get_report(
-        report_id: str
+    report_id: UUID,
+    db: Session = Depends(get_db),
 ):
     """Get a single report by ID."""
-    report = crud.get_report(
-        db=reportsDb,
-        issue_id=report_id
-    )
+    report = crud.get_report(db=db, report_id=report_id)
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
     return report
 
 
-@app.put("/reports/{report_id}")
+# TODO: add authentication middleware and role check
+@app.put("/reports/{report_id}", response_model=IssueOut)
 def update_report(
-        report_id: str,
-        title: Optional[str] = None,
-        description: Optional[str] = None,
-        status: Optional[str] = None
+    report_id: UUID,
+    updated_report: ReportUpdate,
+    db: Session = Depends(get_db),
 ):
     """Update a report."""
-    report = crud.get_report(
-        db=reportsDb,
-        issue_id=report_id
+    if report_id != updated_report.report_id:
+        raise HTTPException(status_code=400, detail="Path report_id does not match body report_id")
+
+    report = crud.update_report(
+        db=db,
+        report_id=updated_report.report_id,
+        new_title=updated_report.title,
+        new_description=updated_report.description,
+        new_status=updated_report.status,
     )
 
-    if not report:
+    if report is None:
         raise HTTPException(status_code=404, detail="Report not found")
-
-
-
     return report
 
 
-@app.delete("/reports/{report_id}")
-def delete_report(report_id: str):
+@app.delete("/reports/{report_id}", status_code=204)
+def delete_report(
+    report_id: UUID,
+    db: Session = Depends(get_db),
+):
     """Delete a report."""
-    if report_id not in reportsDb:
+    deleted = crud.delete_report(db=db, report_id=report_id)
+    if not deleted:
         raise HTTPException(status_code=404, detail="Report not found")
-    del reportsDb[report_id]
-    return {"detail": "Report deleted"}
+    return None
