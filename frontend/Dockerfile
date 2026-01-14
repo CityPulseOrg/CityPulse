@@ -1,8 +1,8 @@
 # CityPulse Frontend Dockerfile
-# Next.js application with Node.js 18 - Multi-stage build
+# Next.js application with Node.js 20 - Multi-stage build
 
 # Stage 1: Dependencies
-FROM node:18-alpine AS deps
+FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
@@ -11,7 +11,7 @@ COPY package*.json ./
 RUN npm ci
 
 # Stage 2: Builder
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Build argument for API URL (needed at build time for Next.js)
@@ -28,7 +28,7 @@ COPY . .
 RUN npm run build
 
 # Stage 3: Runner (Production)
-FROM node:18-alpine AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production \
