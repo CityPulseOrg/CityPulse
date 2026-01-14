@@ -151,7 +151,7 @@ def get_assistant_response(api_key: str, thread_id: str, max_attempts: int = 8, 
 
     return {}
 
-def run_backboard_ai(description: str, latitude: float, longitude: float, image_files: List[UploadFile]):
+def run_backboard_ai(description: str, latitude: Optional[float], longitude: Optional[float], image_files: List[UploadFile]):
     api_key = os.environ.get("BACKBOARD_API_KEY")
     assistant_id = os.environ.get("ASSISTANT_ID")
     if not api_key or not assistant_id:
@@ -173,7 +173,7 @@ def run_backboard_ai(description: str, latitude: float, longitude: float, image_
         logger.error(f"Request failure in AI workflow: {e}")
         return None, None, {}
     
-def ai_followup(thread_id: str, description: str, latitude: float, longitude: float, image_files: List[UploadFile]):
+def ai_followup(thread_id: str, description: str, latitude: Optional[float], longitude: Optional[float], image_files: List[UploadFile]):
     api_key = os.environ.get("BACKBOARD_API_KEY")
     assistant_id = os.environ.get("ASSISTANT_ID")
     if not api_key or not assistant_id:
