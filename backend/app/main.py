@@ -50,15 +50,16 @@ def health():
         }
     except Exception as exc:
         # Surface an unhealthy status for Docker healthcheck
+        logger.error("Health check failed: %s", exc)
         raise HTTPException(
             status_code=503,
             detail={
                 "status": "unhealthy",
                 "service": "citypulse-backend",
                 "database": "error",
-                "error": str(exc),
+                "error": "database connection failed",
             },
-        )
+        ) from None
 
 
 @app.get("/")
