@@ -30,9 +30,8 @@ import uuid
 from fastapi import FastAPI, HTTPException, Form, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List
-from ai_workflow.workflow import *
-from crud import *
-from schemas import *
+from . import crud
+from . import schemas
 
 app = FastAPI(title="CityPulse API", version="1.0.0")
 
@@ -50,8 +49,35 @@ reportsDb: dict = {}
 
 @app.get("/health")
 def health():
-    """Health check endpoint - required for Docker."""
-    return {"status": "healthy", "service": "citypulse-backend"}
+    """Health check endpoint - required for Docker.
+    Tries a trivial DB query; returns 503 if connection fails.
+    """
+    try:
+        # Import inline to avoid circulars during app startup
+        from sqlalchemy import create_engine, text
+        from app.config import get_settings
+
+        settings = get_settings()
+        engine = create_engine(settings.database_url, pool_pre_ping=True)
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+
+        return {
+            "status": "healthy",
+            "service": "citypulse-backend",
+            "database": "ok",
+        }
+    except Exception as exc:
+        # Surface an unhealthy status for Docker healthcheck
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "unhealthy",
+                "service": "citypulse-backend",
+                "database": "error",
+                "error": str(exc),
+            },
+        )
 
 
 
@@ -71,7 +97,7 @@ def create_report(
     issueImages: List[UploadFile] = File(...),
 ):
     """Create a new report."""
-    userReport = Report(
+    userReport = schemas.Report(
         title=title,
         description=description,
         address=address,
@@ -81,9 +107,13 @@ def create_report(
     )
 
     reportId = str(uuid.uuid4())
-    threadId, creationTime, aiResponse = run_backboard_ai(description=description,
-                                                          imageFiles=issueImages)
-    report = crud.create_report(db=reportsDb,
+    # TODO: Implement AI workflow
+    # threadId, creationTime, aiResponse = run_backboard_ai(description=description,
+    #                                                       imageFiles=issueImages)
+    threadId = None
+    creationTime = None
+    aiResponse = None
+    report = crud.create_report(reportsDb,
                                userReport,
                                aiResponse,
                                reportId,
@@ -98,17 +128,17 @@ def list_reports(
     statusFilter: Optional[str] = None
 ):
     """List all reports."""
-    return crud.get_reports(db=reportsDb, statusFilter)
+    return crud.get_reports(reportsDb, statusFilter)
 
 
 @app.get("/reports/{report_id}")
 def get_report(
-        reportId: str
+        report_id: str
 ):
     """Get a single report by ID."""
     report = crud.get_report(
         db=reportsDb,
-        issue_id=reportId
+        issue_id=report_id
     )
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
@@ -125,7 +155,7 @@ def update_report(
     """Update a report."""
     report = crud.get_report(
         db=reportsDb,
-        issue_id=reportId
+        issue_id=report_id
     )
 
     if not report:
@@ -139,7 +169,7 @@ def update_report(
 @app.delete("/reports/{report_id}")
 def delete_report(report_id: str):
     """Delete a report."""
-    if report_id not in reports_db:
+    if report_id not in reportsDb:
         raise HTTPException(status_code=404, detail="Report not found")
-    del reports_db[report_id]
+    del reportsDb[report_id]
     return {"detail": "Report deleted"}
