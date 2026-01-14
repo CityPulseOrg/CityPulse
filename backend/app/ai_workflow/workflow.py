@@ -181,7 +181,7 @@ def ai_followup(thread_id: str, description: str, latitude: float, longitude: fl
         return None, None, {}
     
     try:
-        uploaded_data = upload_information_to_thread(api_key, thread_id, description, latitude, longitude, image_files):
+        uploaded_data = upload_information_to_thread(api_key, thread_id, description, latitude, longitude, image_files)
         if uploaded_data is None:
             return None, None, {}
         

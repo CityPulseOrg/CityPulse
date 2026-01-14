@@ -63,7 +63,7 @@ def create_report(
         status=user_report.status,
         latitude=user_report.latitude,
         longitude=user_report.longitude,
-        report_images=user_report.images,
+        report_images=user_report.report_images,
         thread_id=thread_id_str,
         category=ai_response.get("classification"),
         severity=ai_response.get("severity"),

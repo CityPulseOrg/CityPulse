@@ -40,7 +40,7 @@ def root():
 
 
 @app.post("/reports", response_model=ReportInDB)
-def create_report(
+async def create_report(
     title: str = Form(...),
     description: str = Form(...),
     latitude: Optional[float] = Form(None),
@@ -57,16 +57,15 @@ def create_report(
 
         # Save to local storage (or S3, etc.)
         with open(f"uploads/{filename}", "wb") as f:
-        f.write(contents)
-
-    saved_filenames.append(filename)
-
-
-    userReport = Report(
+            f.write(contents)
+        saved_filenames.append(filename)
+    
+    input_report = Report(
         title=title,
         description=description,
         latitude=latitude,
         longitude=longitude,
+        report_images=saved_filenames
     )
 
     report_id = uuid.uuid4()
@@ -90,7 +89,7 @@ def create_report(
     try:
         report = crud.create_report(
             db=db,
-            user_report=userReport,
+            user_report=input_report,
             ai_response=ai_response,
             report_id=report_id,
             thread_id=thread_id,
@@ -118,7 +117,7 @@ def make_followup(
         description=clarification.get("description"),
         latitude=clarification.get("latitude"),
         longitude=clarification.get("longitude"),
-        image_files=report.
+        image_files=report
     )
 
 
