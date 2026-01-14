@@ -136,7 +136,7 @@ async def create_report(
 
     return report
 
-@app.post("/reports/{report_id}/followup")
+@app.post("/reports/{report_id}/followup", response_model=ReportInDB)
 def make_followup(
     report_id: UUID,
     answers: ReportFollowup,
@@ -147,13 +147,19 @@ def make_followup(
         raise HTTPException(status_code=404, detail="Report not found")
     
     clarification = answers.answers
-    result = ai_followup(
-        thread_id=report.thread_id,
-        description=clarification.get("description"),
-        latitude=clarification.get("latitude"),
-        longitude=clarification.get("longitude"),
-        image_files=report
-    )
+    try:
+        result = ai_followup(
+            thread_id=report.thread_id,
+            description=clarification.get("description"),
+            latitude=clarification.get("latitude"),
+            longitude=clarification.get("longitude"),
+            image_files=report.report_images
+        )
+    except Exception:
+        logger.exception("Failed to process followup")
+        raise HTTPException(status_code=502, detail="AI followup failed") from None
+    
+    return report
 
 
 @app.get("/reports", response_model=List[ReportInDB])
