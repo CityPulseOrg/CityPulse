@@ -77,7 +77,7 @@ class ReportInDB(Report):
     clarification: Optional[str] = None
     number_of_matches: int = 0
     creation_time: datetime
-    updated_at: datetime = None
+    updated_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
