@@ -146,7 +146,7 @@ def make_followup(
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
     
-    clarification = answers.answers
+    clarification = answers.followup
     try:
         result = ai_followup(
             thread_id=report.thread_id,

@@ -43,7 +43,7 @@ export async function followupIssue(id: string, answers: { [key: string]: string
   const res = await fetch(`${API_BASE}/reports/${id}/followup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ answers }),
+    body: JSON.stringify({ followup: answers }),
   });
   if (!res.ok) throw new Error('Failed to followup');
   return res.json();
