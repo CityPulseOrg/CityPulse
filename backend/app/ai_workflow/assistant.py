@@ -145,7 +145,7 @@ def create_assistant():
         logger.info("Assistant ID: " + assistant_id)
         os.environ["ASSISTANT_ID"] = assistant_id
         logger.info("ASSISTANT_ID=%s", assistant_id)
-        print("ok")
+        logger.debug("Assistant environment variable set successfully")
     return assistant_id
 
 
