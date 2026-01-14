@@ -56,18 +56,22 @@ def create_thread(assistant_id: str, api_key: str):
 
 # TODO: Make sure that Content-Type does not need to be defined and verify if requests lib will automatically set it
 # TODO: Need to finish the last part of the function
-def upload_information_to_thread(api_key: str, thread_id: str, description: str, image_files: List[UploadFile]):
+def upload_information_to_thread(api_key: str, thread_id: str, description: str, latitude: Optional[float], longitude: Optional[float], image_files: List[UploadFile]):
     backboard_url = f"https://app.backboard.io/api/threads/{thread_id}/messages"
     headers = {
             # "Content-Type": "multipart/form-data",
             "X-API-Key": api_key
         }
+    content = [f"Description: {description}"]
+    if latitude is not None and longitude is not None:
+        content.append(f"Latitude: {latitude}")
+        content.append(f"Longitude: {longitude}")
     data = {
-            "content": description,
+            "content": "\n".join(content),
             "llm_provider": "openai",
             "model_name": "gpt-5",
             "stream": "false",
-            "memory": "Auto",
+            "memory": "Readonly",
             "web_search": "off",
             "send_to_llm": "true",
             "metadata": ""
@@ -147,7 +151,7 @@ def get_assistant_response(api_key: str, thread_id: str, max_attempts: int = 8, 
 
     return {}
 
-def run_backboard_ai(description: str, image_files: List[UploadFile]):
+def run_backboard_ai(description: str, latitude: Optional[float], longitude: Optional[float], image_files: List[UploadFile]):
     api_key = os.environ.get("BACKBOARD_API_KEY")
     assistant_id = os.environ.get("ASSISTANT_ID")
     if not api_key or not assistant_id:
@@ -159,7 +163,7 @@ def run_backboard_ai(description: str, image_files: List[UploadFile]):
         if thread_id is None or creation_time is None:
             return None, None, {}
 
-        uploaded_data = upload_information_to_thread(api_key, thread_id, description, image_files)
+        uploaded_data = upload_information_to_thread(api_key, thread_id, description, latitude, longitude, image_files)
         if uploaded_data is None:
             return None, None, {}
 
@@ -168,5 +172,23 @@ def run_backboard_ai(description: str, image_files: List[UploadFile]):
     except RequestException as e:
         logger.error(f"Request failure in AI workflow: {e}")
         return None, None, {}
+    
+def ai_followup(thread_id: str, description: str, latitude: Optional[float], longitude: Optional[float], image_files: List[UploadFile]):
+    api_key = os.environ.get("BACKBOARD_API_KEY")
+    assistant_id = os.environ.get("ASSISTANT_ID")
+    if not api_key or not assistant_id:
+        logger.error("BACKBOARD_API_KEY or ASSISTANT_ID not found or could not be retrieved")
+        return {}
+    
+    try:
+        uploaded_data = upload_information_to_thread(api_key, thread_id, description, latitude, longitude, image_files)
+        if uploaded_data is None:
+            return {}
+        
+        ai_response = get_assistant_response(api_key, thread_id)
+        return ai_response
+    except RequestException as e:
+        logger.error(f"Request failure in AI workflow: {e}")
+        return {}
 
 

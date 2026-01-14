@@ -4,9 +4,9 @@ SQLAlchemy models for the civic issue reporting system.
 
 """
 import uuid
-from datetime import datetime, timezone 
+from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, ForeignKey, String, Text, Float, Integer, Boolean
+from sqlalchemy import Column, DateTime, ForeignKey, String, Text, Float, Integer, Boolean, ARRAY
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -23,13 +23,12 @@ class IssueTable(Base):
     # Core user report fields (match schemas.Report / ReportInDB)
     title = Column(String, nullable=False)
     description = Column(Text, nullable=False)
-    address = Column(String, nullable=False)
-    city = Column(String, nullable=False)
 
     status = Column(String, nullable=False, default="New")
 
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
+    report_images = Column(ARRAY(String), nullable=True, default=[])
 
     # AI-enriched fields
     thread_id = Column(String, nullable=True)     
@@ -39,7 +38,7 @@ class IssueTable(Base):
     priority_score = Column(Integer, nullable=True)
     needs_clarification = Column(Boolean, nullable=True)
     clarification = Column(String, nullable=True)
-    nb_of_matches = Column(Integer, nullable=False, default=0)
+    number_of_matches = Column(Integer, nullable=False, default=0)
 
     creation_time = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)

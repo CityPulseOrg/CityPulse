@@ -8,9 +8,14 @@ from typing import Optional
 import requests
 from requests import RequestException
 import logging
-logger = logging.getLogger(__name__)
 from app.validators import sanitize_api_key
 from app.schemas import ClassificationEnum, SeverityEnum, PriorityEnum
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",)
+logger = logging.getLogger(__name__)
+
+from dotenv import load_dotenv
+load_dotenv()
 
 #TODO: Make sure that timeout= can be used inside the API call
 def create_assistant():
@@ -48,42 +53,49 @@ def create_assistant():
                                   "type": "function",
                                   "function": {
                                       "name": "analyze_report",
-                                      "description": ("Construct the finalized report object with all the necessary fields "
-                                                      "before it gets added to the database"),
+                                      "description": ("Analyze the civic problem reported by the user and construct the "
+                                                      "finalized report object with all the necessary fields "
+                                                      "before it gets added to the database."),
                                       "parameters": {
                                           "type": "object",
                                           "properties": {
                                               "classification": {
                                                   "type": "string",
-                                                  "description": "Category of the issue reported by the user",
+                                                  "description": "Category of the issue reported by the user.",
                                                   "enum": [e.value for e in ClassificationEnum],
                                               },
                                               "severity": {
                                                   "type": "string",
-                                                  "description": "Level of severity of the issue reported by the user",
+                                                  "description": "Level of severity of the issue reported by the user.",
                                                   "enum": [e.value for e in SeverityEnum],
                                               },
                                               "priority": {
                                                   "type": "string",
                                                   "description": ("Level of urgency of the issue reported by the user "
-                                                                  "(i.e how quickly the report should be addressed)"),
+                                                                  "(i.e how quickly the report should be addressed)."),
                                                   "enum": [e.value for e in PriorityEnum],
                                               },
                                               "priority_score": {
                                                   "type": "number",
                                                   "description": ("A number between 0 and 100 representing the level "
                                                                   "of priority of the report (greater score means that "
-                                                                  "it is more urgent and has greater priority)"),
+                                                                  "it is more urgent and has greater priority)."),
                                               },
                                               "needs_clarification": {
                                                 "type": "boolean",
                                                 "description": ("True if the information given by the user is not clear "
-                                                                "or not enough (ex: image blurred, scarce description)"),
+                                                                "or not enough (ex: image blurred, scarce description)."),
                                               },
                                               "clarification": {
                                                   "type": "string",
                                                   "description": ("If needs_clarification is True, ask a simple question "
-                                                                  "or multiple simple questions to clarify"),
+                                                                  "or multiple simple questions that ask for clarification from the user."),
+                                              },
+                                              "number_of_matches": {
+                                                  "type": "number",
+                                                  "description": ("Recall how many reports were made about the exact same issue "
+                                                  "(ex: very similar latitude and longitude, similar images, etc), and give a number "
+                                                  "representing this amount, excluding the current report that is being analyzed.")
                                               }
                                           },
                                           "required": [
@@ -92,6 +104,7 @@ def create_assistant():
                                               "priority",
                                               "priority_score",
                                               "needs_clarification",
+                                              "number_of_matches",
                                           ],
                                           "if": {
                                               "properties": {
@@ -132,6 +145,7 @@ def create_assistant():
         logger.info("Assistant ID: " + assistant_id)
         os.environ["ASSISTANT_ID"] = assistant_id
         logger.info("ASSISTANT_ID=%s", assistant_id)
+        logger.debug("Assistant environment variable set successfully")
     return assistant_id
 
 

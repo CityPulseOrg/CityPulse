@@ -60,11 +60,10 @@ def create_report(
         id=coerced_report_id,
         title=user_report.title,
         description=user_report.description,
-        address=user_report.address,
-        city=user_report.city,
         status=user_report.status,
         latitude=user_report.latitude,
         longitude=user_report.longitude,
+        report_images=user_report.report_images,
         thread_id=thread_id_str,
         category=ai_response.get("classification"),
         severity=ai_response.get("severity"),
@@ -72,7 +71,7 @@ def create_report(
         priority_score=ai_response.get("priority_score"),
         needs_clarification=ai_response.get("needs_clarification"),
         clarification=ai_response.get("clarification"),
-        #TODO: Add nbOfMatches here once the AI is programmed to get the number of matches
+        number_of_matches=ai_response.get("number_of_matches", 0),
         creation_time=coerced_creation_time,
     )
     db.add(report)
@@ -85,13 +84,21 @@ def create_report(
     return report
 
 
-#-----------------
-# READ
-
-def get_reports(db: Session, status_filter: Optional[str] = None):
+def get_reports(
+    db: Session,
+    status_filter: Optional[str] = None,
+    priority_filter: Optional[str] = None,
+    category_filter: Optional[str] = None
+):
     query = db.query(models.IssueTable)
+
     if status_filter:
         query = query.filter(models.IssueTable.status == status_filter)
+    if priority_filter:
+        query = query.filter(models.IssueTable.priority == priority_filter)
+    if category_filter:
+        query = query.filter(models.IssueTable.category == category_filter)
+
     return query.order_by(models.IssueTable.creation_time.desc()).all()
 
 
@@ -110,8 +117,6 @@ def update_report(
     new_title: Optional[str] = None,
     new_description: Optional[str] = None,
     new_status: Optional[str] = None,
-    new_address: Optional[str] = None,
-    new_city: Optional[str] = None,
     new_latitude: Optional[float] = None,
     new_longitude: Optional[float] = None
 ) -> Optional[models.IssueTable]:
@@ -123,8 +128,6 @@ def update_report(
         "title": new_title,
         "description": new_description,
         "status": new_status,
-        "address": new_address,
-        "city": new_city,
         "latitude": new_latitude,
         "longitude": new_longitude,
     }

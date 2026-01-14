@@ -1,5 +1,7 @@
 """CityPulse Backend API."""
 
+import os
+from pathlib import Path
 import logging
 import uuid
 from typing import List, Optional
@@ -10,12 +12,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.ai_workflow.workflow import run_backboard_ai
+from app.ai_workflow.workflow import run_backboard_ai, ai_followup
 from app.database import get_db
-from app.schemas import IssueOut, Report, ReportUpdate
+from app.schemas import ReportInDB, Report, ReportUpdate, ReportFollowup
 from app.validators import validate_images
 
 logger = logging.getLogger(__name__)
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(title="CityPulse API", version="1.0.0")
 
@@ -67,12 +71,10 @@ def root():
     return {"message": "CityPulse API", "docs": "/docs"}
 
 
-@app.post("/reports", response_model=IssueOut)
-def create_report(
+@app.post("/reports", response_model=ReportInDB)
+async def create_report(
     title: str = Form(...),
     description: str = Form(...),
-    address: str = Form(...),
-    city: str = Form(...),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
     issue_images: List[UploadFile] = File(...),
@@ -80,14 +82,25 @@ def create_report(
 ):
     """Create a new report."""
     validate_images(issue_images)
+    saved_filenames = []
+    for file in issue_images:
+        contents = await file.read()
+        filename = f"{uuid.uuid4()}_{file.filename}"
 
-    userReport = Report(
+        # Save to local storage (or S3, etc.)
+        with open(UPLOAD_DIR / filename, "wb") as f:
+            f.write(contents)
+        saved_filenames.append(filename)
+        
+        # Seek back to the start so the file can be read again
+        await file.seek(0)
+    
+    input_report = Report(
         title=title,
         description=description,
-        address=address,
-        city=city,
         latitude=latitude,
         longitude=longitude,
+        report_images=saved_filenames
     )
 
     report_id = uuid.uuid4()
@@ -95,6 +108,8 @@ def create_report(
     try:
         thread_id, creation_time, ai_response = run_backboard_ai(
             description=description,
+            latitude=latitude,
+            longitude=longitude,
             image_files=issue_images,
         )
         if thread_id is None or creation_time is None or ai_response == {}:
@@ -109,7 +124,7 @@ def create_report(
     try:
         report = crud.create_report(
             db=db,
-            user_report=userReport,
+            user_report=input_report,
             ai_response=ai_response,
             report_id=report_id,
             thread_id=thread_id,
@@ -121,17 +136,44 @@ def create_report(
 
     return report
 
-
-@app.get("/reports", response_model=List[IssueOut])
-def list_reports(
-    status: Optional[str] = None,
-    db: Session = Depends(get_db),
+@app.post("/reports/{report_id}/followup", response_model=ReportInDB)
+def make_followup(
+    report_id: UUID,
+    answers: ReportFollowup,
+    db: Session = Depends(get_db)
 ):
-    """List all reports."""
-    return crud.get_reports(db=db, status_filter=status)
+    report = crud.get_report(db=db, report_id=report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    
+    clarification = answers.followup
+    try:
+        result = ai_followup(
+            thread_id=report.thread_id,
+            description=clarification.get("description"),
+            latitude=clarification.get("latitude"),
+            longitude=clarification.get("longitude"),
+            image_files=report.report_images
+        )
+    except Exception:
+        logger.exception("Failed to process followup")
+        raise HTTPException(status_code=502, detail="AI followup failed") from None
+    
+    return report
 
 
-@app.get("/reports/{report_id}", response_model=IssueOut)
+@app.get("/reports", response_model=List[ReportInDB])
+def list_reports(
+    status_filter: Optional[str] = None,
+    priority_filter: Optional[str] = None,
+    category_filter: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """List all reports with optional filtering."""
+    return crud.get_reports(db=db, status_filter=status_filter, priority_filter=priority_filter, category_filter=category_filter)
+
+
+@app.get("/reports/{report_id}", response_model=ReportInDB)
 def get_report(
     report_id: UUID,
     db: Session = Depends(get_db),
@@ -144,7 +186,7 @@ def get_report(
 
 
 # TODO: add authentication middleware and role check
-@app.put("/reports/{report_id}", response_model=IssueOut)
+@app.put("/reports/{report_id}", response_model=ReportInDB)
 def update_report(
     report_id: UUID,
     updated_report: ReportUpdate,

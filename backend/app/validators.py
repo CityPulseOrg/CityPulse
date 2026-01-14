@@ -57,8 +57,9 @@ def validate_images(images: List[UploadFile]) -> None:
                 detail=f"File '{image.filename}' is not a valid image format"
             )
 
-        image.file.seek(0, 2)
-        size = image.file.tell()
+        image.file.seek(0)
+        contents = image.file.read()
+        size = len(contents)
         image.file.seek(0)
 
         if size > MAX_IMAGE_SIZE_BYTES:
