@@ -20,7 +20,7 @@ export async function createIssue(data: { title?: string; description: string; p
 }
 
 export async function getIssue(id: string): Promise<import('./types').IssueDetails> {
-  const res = await fetch(`${API_BASE}/v1/issues/${id}`);
+  const res = await fetch(`${API_BASE}/reports/${id}`);
   if (!res.ok) throw new Error('Failed to get issue');
   return res.json();
 }

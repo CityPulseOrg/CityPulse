@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.ai_workflow.workflow import run_backboard_ai
 from app.database import get_db
-from app.schemas import IssueOut, Report, ReportUpdate
+from app.schemas import ReportInDB, Report, ReportUpdate
 from app.validators import validate_images
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ def root():
     return {"message": "CityPulse API", "docs": "/docs"}
 
 
-@app.post("/reports", response_model=IssueOut)
+@app.post("/reports", response_model=ReportInDB)
 def create_report(
     title: str = Form(...),
     description: str = Form(...),
@@ -92,7 +92,7 @@ def create_report(
     return report
 
 
-@app.get("/reports", response_model=List[IssueOut])
+@app.get("/reports", response_model=List[ReportInDB])
 def list_reports(
     status_filter: Optional[str] = None,
     priority_filter: Optional[str] = None,
@@ -103,7 +103,7 @@ def list_reports(
     return crud.get_reports(db=db, status_filter=status_filter, priority_filter=priority_filter, category_filter=category_filter)
 
 
-@app.get("/reports/{report_id}", response_model=IssueOut)
+@app.get("/reports/{report_id}", response_model=ReportInDB)
 def get_report(
     report_id: UUID,
     db: Session = Depends(get_db),
@@ -116,7 +116,7 @@ def get_report(
 
 
 # TODO: add authentication middleware and role check
-@app.put("/reports/{report_id}", response_model=IssueOut)
+@app.put("/reports/{report_id}", response_model=ReportInDB)
 def update_report(
     report_id: UUID,
     updated_report: ReportUpdate,
