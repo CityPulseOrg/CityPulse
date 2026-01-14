@@ -80,7 +80,7 @@ export default function ReportPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="title">Title (optional)</Label>
+                <Label htmlFor="title">Title</Label>
                 <Input
                   id="title"
                   value={title}
@@ -99,7 +99,7 @@ export default function ReportPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="photos">Photos (optional, max 5, 5MB each)</Label>
+                <Label htmlFor="photos">Photos (max 5, 5MB each)</Label>
                 <Input
                   id="photos"
                   type="file"

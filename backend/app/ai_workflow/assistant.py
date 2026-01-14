@@ -8,9 +8,14 @@ from typing import Optional
 import requests
 from requests import RequestException
 import logging
-logger = logging.getLogger(__name__)
 from app.validators import sanitize_api_key
 from app.schemas import ClassificationEnum, SeverityEnum, PriorityEnum
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",)
+logger = logging.getLogger(__name__)
+
+from dotenv import load_dotenv
+load_dotenv()
 
 #TODO: Make sure that timeout= can be used inside the API call
 def create_assistant():
@@ -140,6 +145,7 @@ def create_assistant():
         logger.info("Assistant ID: " + assistant_id)
         os.environ["ASSISTANT_ID"] = assistant_id
         logger.info("ASSISTANT_ID=%s", assistant_id)
+        print("ok")
     return assistant_id
 
 

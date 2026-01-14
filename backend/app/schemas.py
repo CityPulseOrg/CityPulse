@@ -6,7 +6,7 @@ Request/response models for API validation.
 from enum import Enum
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from uuid import UUID
 
 class ClassificationEnum(str, Enum):
@@ -64,7 +64,7 @@ class ReportUpdate(BaseModel):
     status: Optional[ReportStatus] = None
 
 class ReportFollowup(BaseModel):
-    followup: Dict[str, any]
+    followup: Dict[str, Any]
 
 class ReportInDB(Report):
     id: UUID

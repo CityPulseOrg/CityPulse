@@ -25,7 +25,11 @@ export async function createIssue(data: { title?: string; description: string; p
     method: 'POST',
     body: formData,
   });
-  if (!res.ok) throw new Error('Failed to create issue');
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    console.error('createIssue failed:', res.status, res.statusText, 'response body:', text,)
+    throw new Error(`Failed to create issue: ${res.status}`)
+  }
   return res.json();
 }
 

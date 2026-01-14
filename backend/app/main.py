@@ -1,5 +1,7 @@
 """CityPulse Backend API."""
 
+import os
+from pathlib import Path
 import logging
 import uuid
 from typing import List, Optional
@@ -16,6 +18,8 @@ from app.schemas import ReportInDB, Report, ReportUpdate, ReportFollowup
 from app.validators import validate_images
 
 logger = logging.getLogger(__name__)
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(title="CityPulse API", version="1.0.0")
 
@@ -56,7 +60,7 @@ async def create_report(
         filename = f"{uuid.uuid4()}_{file.filename}"
 
         # Save to local storage (or S3, etc.)
-        with open(f"uploads/{filename}", "wb") as f:
+        with open(UPLOAD_DIR / filename, "wb") as f:
             f.write(contents)
         saved_filenames.append(filename)
     

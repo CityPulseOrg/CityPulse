@@ -26,8 +26,10 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-citypulse}:${POSTGRES_PASSWORD:-citypulse}@db:5432/${POSTGRES_DB:-citypulse}
-      - BACKBOARD_API_KEY=${BACKBOARD_API_KEY}
-      - BACKBOARD_WORKFLOW_ID=${BACKBOARD_WORKFLOW_ID}
+      # BACKBOARD_API_KEY=${BACKBOARD_API_KEY}
+      # BACKBOARD_WORKFLOW_ID=${BACKBOARD_WORKFLOW_ID}
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy
