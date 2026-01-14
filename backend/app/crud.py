@@ -71,7 +71,7 @@ def create_report(
         priority_score=ai_response.get("priority_score"),
         needs_clarification=ai_response.get("needs_clarification"),
         clarification=ai_response.get("clarification"),
-        number_of_matches=ai_response.get("number_of_matches"),
+        number_of_matches=ai_response.get("number_of_matches", 0),
         creation_time=coerced_creation_time,
     )
     db.add(report)
