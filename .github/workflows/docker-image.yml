@@ -39,6 +39,16 @@ jobs:
       - name: Build Docker image
         run: docker build -t citypulse:${{ github.sha }} -f backend/Dockerfile backend
 
+      - name: Verify secrets are configured
+        if: github.event_name == 'push'
+        env:
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          BACKBOARD_API_KEY: ${{ secrets.BACKBOARD_API_KEY }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        run: python scripts/verify_secrets.py
+
       - name: Run container
         env:
           # Keep values out of the command line/logs; pass by variable name instead.
@@ -59,11 +69,11 @@ jobs:
             citypulse:${{ github.sha }}
 
       - name: Wait for API and health check
-        run: .github/scripts/health-check.sh citypulse-test
+        run: python scripts/health_check.py citypulse-test
 
       - name: Verify secrets injected
         if: github.event_name == 'push'
-        run: .github/scripts/verify-secrets.sh citypulse-test
+        run: python scripts/verify_secrets.py --container citypulse-test
 
       - name: Cleanup
         if: always()
