@@ -1,4 +1,14 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+// Use internal Docker network URL for server-side requests, public URL for client-side
+const getApiBase = () => {
+  if (typeof window === 'undefined') {
+    // Server-side: use container-to-container communication
+    return process.env.API_BASE_URL || 'http://backend:8000';
+  }
+  // Client-side: use public URL (browser makes requests through host)
+  return process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+};
+
+const API_BASE = getApiBase();
 
 export async function createIssue(data: { title?: string; description: string; photos?: File[]; lat?: number; lng?: number }): Promise<import('./types').CreateIssueResponse> {
   const formData = new FormData();
