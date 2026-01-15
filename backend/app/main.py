@@ -161,6 +161,15 @@ async def create_report(
     )
 
     report_id = uuid.uuid4()
+    
+    # Query for similar reports to pass count to AI
+    similar_count = crud.get_similar_reports_count(
+        db=db,
+        category=None,  # Category not yet determined
+        latitude=latitude,
+        longitude=longitude,
+        exclude_report_id=report_id
+    )
 
     try:
         thread_id, creation_time, ai_response = run_backboard_ai(
@@ -168,6 +177,7 @@ async def create_report(
             latitude=latitude,
             longitude=longitude,
             image_files=issue_images,
+            number_of_matches=similar_count,
         )
         if thread_id is None or creation_time is None or ai_response == {}:
             logger.error("AI workflow returned an invalid response")
@@ -195,7 +205,7 @@ async def create_report(
     return transform_to_response(report, base_url)
 
 @app.post("/reports/{report_id}/followup", response_model=ReportResponse)
-def make_followup(
+async def make_followup(
     request: Request,
     report_id: UUID,
     answers: ReportFollowup,
@@ -206,17 +216,49 @@ def make_followup(
         raise HTTPException(status_code=404, detail="Report not found")
 
     clarification = answers.followup
+    
+    # Convert image filenames to full paths for AI workflow
+    image_paths = []
+    if report.report_images:
+        for filename in report.report_images:
+            full_path = UPLOAD_DIR / filename
+            if full_path.exists():
+                image_paths.append(str(full_path))
+    
+    # Query for similar reports to pass count to AI
+    similar_count = crud.get_similar_reports_count(
+        db=db,
+        category=report.category,
+        latitude=clarification.get("latitude") or report.latitude,
+        longitude=clarification.get("longitude") or report.longitude,
+        exclude_report_id=report_id
+    )
+    
+    # Use follow-up description or fallback to original report description
+    followup_description = clarification.get("description") or report.description
+
     try:
         result = ai_followup(
             thread_id=report.thread_id,
-            description=clarification.get("description"),
+            description=followup_description,
             latitude=clarification.get("latitude"),
             longitude=clarification.get("longitude"),
-            image_files=report.report_images
+            image_paths=image_paths,
+            number_of_matches=similar_count
         )
     except Exception:
         logger.exception("Failed to process followup")
         raise HTTPException(status_code=500, detail="AI followup failed") from None
+
+    # Update report with AI response
+    if result:
+        report = crud.update_report_with_ai_response(
+            db=db,
+            report_id=report_id,
+            ai_response=result
+        )
+        if not report:
+            raise HTTPException(status_code=404, detail="Report not found after update")
 
     base_url = str(request.base_url).rstrip("/")
     return transform_to_response(report, base_url)

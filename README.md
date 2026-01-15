@@ -152,15 +152,88 @@ Citizens -> Frontend -> Backend API -> Backboard AI Workflow
 
 ## API Endpoints
 
-| Method | Endpoint           | Description         |
-|--------|--------------------|---------------------|
-| GET    | `/`                | API info            |
-| GET    | `/health`          | Health check        |
-| POST   | `/reports`         | Create a report     |
-| GET    | `/reports`         | List all reports    |
-| GET    | `/reports/{id}`    | Get a single report |
-| PUT    | `/reports/{id}`    | Update a report     |
-| DELETE | `/reports/{id}`    | Delete a report     |
+| Method | Endpoint                      | Description                    |
+|--------|-------------------------------|--------------------------------|
+| GET    | `/`                           | API info                       |
+| GET    | `/health`                     | Health check                   |
+| POST   | `/reports`                    | Create a report                |
+| GET    | `/reports`                    | List all reports               |
+| GET    | `/reports/{id}`               | Get a single report            |
+| PUT    | `/reports/{id}`               | Update a report                |
+| DELETE | `/reports/{id}`               | Delete a report                |
+| POST   | `/reports/{id}/followup`      | Submit follow-up clarification |
+
+## Backboard AI Assistant Setup
+
+CityPulse uses a Backboard AI assistant to analyze civic issue reports and enrich them with structured data (category, severity, priority, etc.).
+
+### Creating the Assistant
+
+1. **Set your Backboard API key** in `.env`:
+   ```
+   BACKBOARD_API_KEY=your_api_key_here
+   ```
+
+2. **Run the assistant creation script**:
+   ```bash
+   # If running in Docker
+   docker compose exec backend python -m app.ai_workflow.assistant
+   
+   # If running locally
+   python -m backend.app.ai_workflow.assistant
+   ```
+
+3. **The script will**:
+   - Check if an assistant named "CPAssistant" already exists
+   - If not, create a new assistant with the required schema
+   - Print the Assistant ID and set it in the environment variable `ASSISTANT_ID`
+
+4. **Save the Assistant ID**: Add it to your `.env` file:
+   ```
+   ASSISTANT_ID=your_assistant_id_here
+   ```
+
+### Assistant Schema
+
+The assistant is configured with a `analyze_report` function that returns:
+
+- **classification**: Category of the issue (pothole, broken_streetlight, etc.)
+- **severity**: Level of severity (very_low to very_high)
+- **priority**: Urgency level (not_urgent, urgent, very_urgent)
+- **priority_score**: Numeric score 0-100 for prioritization
+- **needs_clarification**: Boolean indicating if more info is needed
+- **clarification**: Questions to ask the user (if needs_clarification is true)
+- **number_of_matches**: Count of similar reports (provided by the backend)
+
+### How Follow-up Works
+
+When a report is created, the AI may determine that it `needs_clarification` and will set `clarification` with questions for the user.
+
+1. **Initial Report**: User submits a report via `POST /reports`
+   - Backend saves the images to disk and passes UploadFile objects to AI
+   - AI analyzes and may request clarification
+   - Report status may be set to "Waiting for user follow-up"
+
+2. **Follow-up Flow**: User provides additional information via `POST /reports/{id}/followup`
+   - Backend retrieves the existing report
+   - Converts saved image filenames to full local paths
+   - Queries database for similar reports (same category + nearby location)
+   - Passes follow-up data + image paths + similar report count to AI
+   - AI re-analyzes with new context
+   - Backend updates the report with new AI response (category, severity, priority, etc.)
+   - If clarification is no longer needed, status is updated
+
+3. **Image Handling**:
+   - **Initial report**: Images are UploadFile objects passed directly to AI
+   - **Follow-up**: Images are loaded from disk paths and sent to AI
+   - All images are stored in `uploads/` directory
+
+4. **Similar Reports Query**:
+   - Backend counts similar reports using:
+     - Same category (if known)
+     - Nearby location (±0.01 degrees, ~1km radius)
+   - Count is passed to AI to help with analysis
+   - AI uses this to populate `number_of_matches` field
 
 ## Environment Variables
 
@@ -170,4 +243,5 @@ Citizens -> Frontend -> Backend API -> Backboard AI Workflow
 | POSTGRES_PASSWORD     | Database password              |
 | POSTGRES_DB           | Database name                  |
 | BACKBOARD_API_KEY     | Backboard API key              |
+| ASSISTANT_ID          | Backboard assistant ID         |
 | VITE_API_URL          | Backend URL for frontend       |

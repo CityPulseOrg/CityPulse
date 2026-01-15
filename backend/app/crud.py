@@ -56,11 +56,16 @@ def create_report(
     if coerced_creation_time is None:
         raise ValueError(f"Invalid creation_time: {creation_time}")
 
+    # Determine status based on whether AI needs clarification
+    status = user_report.status
+    if ai_response.get("needs_clarification"):
+        status = "Waiting for user follow-up"
+
     report = models.IssueTable(
         id=coerced_report_id,
         title=user_report.title,
         description=user_report.description,
-        status=user_report.status,
+        status=status,
         latitude=user_report.latitude,
         longitude=user_report.longitude,
         report_images=user_report.report_images,
@@ -144,6 +149,91 @@ def update_report(
 
     db.refresh(report)
     return report
+
+
+def update_report_with_ai_response(
+    db: Session,
+    report_id: Union[str, UUID],
+    ai_response: dict
+) -> Optional[models.IssueTable]:
+    """Update a report with AI-enriched fields from follow-up."""
+    report = get_report(db, report_id)
+    if report is None:
+        return None
+
+    # Update AI-enriched fields from response
+    if "classification" in ai_response:
+        report.category = ai_response["classification"]
+    if "severity" in ai_response:
+        report.severity = ai_response["severity"]
+    if "priority" in ai_response:
+        report.priority = ai_response["priority"]
+    if "priority_score" in ai_response:
+        report.priority_score = ai_response["priority_score"]
+    if "needs_clarification" in ai_response:
+        report.needs_clarification = ai_response["needs_clarification"]
+    if "clarification" in ai_response:
+        report.clarification = ai_response["clarification"]
+    if "number_of_matches" in ai_response:
+        report.number_of_matches = ai_response["number_of_matches"]
+    
+    # If clarification is no longer needed, update status
+    if not ai_response.get("needs_clarification", True):
+        report.status = "New"
+
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise
+
+    db.refresh(report)
+    return report
+
+
+def get_similar_reports_count(
+    db: Session,
+    category: Optional[str],
+    latitude: Optional[float],
+    longitude: Optional[float],
+    exclude_report_id: Optional[Union[str, UUID]] = None,
+    lat_tolerance: float = 0.01,  # ~1km
+    lon_tolerance: float = 0.01
+) -> int:
+    """Count similar reports based on category and nearby location.
+    
+    Args:
+        db: Database session
+        category: Category/classification of the report
+        latitude: Report latitude
+        longitude: Report longitude
+        exclude_report_id: Report ID to exclude from count (current report)
+        lat_tolerance: Latitude bounding box tolerance
+        lon_tolerance: Longitude bounding box tolerance
+    
+    Returns:
+        Count of similar reports
+    """
+    query = db.query(models.IssueTable)
+    
+    # Filter by category if provided
+    if category:
+        query = query.filter(models.IssueTable.category == category)
+    
+    # Filter by nearby location if coordinates provided
+    if latitude is not None and longitude is not None:
+        query = query.filter(
+            models.IssueTable.latitude.between(latitude - lat_tolerance, latitude + lat_tolerance),
+            models.IssueTable.longitude.between(longitude - lon_tolerance, longitude + lon_tolerance)
+        )
+    
+    # Exclude the current report
+    if exclude_report_id:
+        coerced_id = _coerce_uuid(exclude_report_id)
+        if coerced_id:
+            query = query.filter(models.IssueTable.id != coerced_id)
+    
+    return query.count()
 
 
 # -------------------------
