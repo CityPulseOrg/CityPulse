@@ -1,8 +1,8 @@
 // Status values matching backend ReportStatus enum
 export type ReportStatus = "New" | "In Progress" | "Resolved" | "Waiting for user follow-up";
 
-// Priority values matching backend
-export type ReportPriority = "not_urgent" | "urgent" | "very_urgent" | "Low" | "Medium" | "High";
+// Priority values matching backend PriorityEnum
+export type ReportPriority = "not_urgent" | "urgent" | "very_urgent";
 
 // Severity values matching backend
 export type ReportSeverity = "very_low" | "low" | "medium" | "high" | "very_high";
@@ -43,7 +43,6 @@ export interface IssueDetails {
   category?: string;
   priority?: string;
   severity?: string;
-  department?: string;
   images: Image[];
   clarification_questions?: ClarificationQuestion[];
   events?: ReportEvent[];

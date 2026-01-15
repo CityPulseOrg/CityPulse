@@ -3,7 +3,7 @@ CityPulse Database Configuration
 SQLAlchemy setup for PostgreSQL connection.
 """
 # DOCS:
-# - UGly ahh sqlalchemy doc: https://docs.sqlalchemy.org/en/20/tutorial/index.html 
+# - SQLAlchemy docs: https://docs.sqlalchemy.org/en/20/tutorial/index.html 
 # - FastAPI + SQLAlchemy: https://fastapi.tiangolo.com/tutorial/sql-databases/
 
 from sqlalchemy import create_engine

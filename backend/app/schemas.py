@@ -51,6 +51,14 @@ class ImageResponse(BaseModel):
     url: str
 
 
+class ClarificationQuestion(BaseModel):
+    """Structured clarification question for frontend."""
+    id: str
+    question: str
+    type: str = "text"  # "text" or "choice"
+    choices: Optional[List[str]] = None
+
+
 # TODO: Verify if we need a separate status-update-only schema
 class Report(BaseModel):
     title: str
@@ -96,7 +104,7 @@ class ReportResponse(BaseModel):
     status: ReportStatus
     latitude: Optional[float] = None
     longitude: Optional[float] = None
-    report_images: Optional[List[ImageResponse]] = None
+    images: Optional[List[ImageResponse]] = None
     thread_id: Optional[str] = None
     category: Optional[ClassificationEnum] = None
     severity: Optional[SeverityEnum] = None
@@ -104,6 +112,7 @@ class ReportResponse(BaseModel):
     priority_score: Optional[int] = None
     needs_clarification: Optional[bool] = None
     clarification: Optional[str] = None
+    clarification_questions: Optional[List[ClarificationQuestion]] = None
     number_of_matches: int = 0
     creation_time: datetime
     updated_at: Optional[datetime] = None

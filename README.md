@@ -164,7 +164,7 @@ Run services locally for faster iteration and debugging.
 1. **Check backend health:**
    ```bash
    curl http://localhost:8000/health
-   # Should return: {"status": "healthy", "database": "connected"}
+   # Should return: {"status": "healthy", "service": "citypulse-backend", "database": "ok"}
    ```
 
 2. **Check API documentation:**

@@ -90,9 +90,9 @@ export default function AdminPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Priorities</SelectItem>
-                <SelectItem value="High">🔴 High Priority</SelectItem>
-                <SelectItem value="Medium">🟡 Medium Priority</SelectItem>
-                <SelectItem value="Low">🟢 Low Priority</SelectItem>
+                <SelectItem value="very_urgent">🔴 Very Urgent</SelectItem>
+                <SelectItem value="urgent">🟡 Urgent</SelectItem>
+                <SelectItem value="not_urgent">🟢 Not Urgent</SelectItem>
               </SelectContent>
             </Select>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
@@ -102,9 +102,13 @@ export default function AdminPage() {
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
                 <SelectItem value="pothole">🕳️ Pothole</SelectItem>
-                <SelectItem value="graffiti">🎨 Graffiti</SelectItem>
-                <SelectItem value="lighting">💡 Street Light</SelectItem>
-                <SelectItem value="trash">🗑️ Trash</SelectItem>
+                <SelectItem value="broken_streetlight">💡 Broken Streetlight</SelectItem>
+                <SelectItem value="illegal_graffiti">🎨 Graffiti</SelectItem>
+                <SelectItem value="excessive_dumping">🗑️ Illegal Dumping</SelectItem>
+                <SelectItem value="vandalism">🔨 Vandalism</SelectItem>
+                <SelectItem value="broken_street_sign">🚧 Broken Sign</SelectItem>
+                <SelectItem value="overgrown_grass">🌿 Overgrown Grass</SelectItem>
+                <SelectItem value="other">📋 Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -131,8 +135,8 @@ export default function AdminPage() {
                 <div
                   key={issue.id}
                   className={`bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer p-5 border-l-4 transform hover:-translate-y-1 ${
-                    issue.priority === 'High' ? 'border-red-500 hover:border-red-600' :
-                    issue.priority === 'Medium' ? 'border-yellow-500 hover:border-yellow-600' :
+                    issue.priority === 'very_urgent' ? 'border-red-500 hover:border-red-600' :
+                    issue.priority === 'urgent' ? 'border-yellow-500 hover:border-yellow-600' :
                     'border-blue-500 hover:border-purple-500'
                   }`}
                   onClick={() => setSelectedIssue(issue.id)}
@@ -160,12 +164,12 @@ export default function AdminPage() {
                           <Badge
                             variant="outline"
                             className={`text-xs px-3 py-1 font-semibold ${
-                              issue.priority === 'High' ? 'border-red-500 text-red-700 bg-red-50' :
-                              issue.priority === 'Medium' ? 'border-yellow-500 text-yellow-700 bg-yellow-50' :
+                              issue.priority === 'very_urgent' ? 'border-red-500 text-red-700 bg-red-50' :
+                              issue.priority === 'urgent' ? 'border-yellow-500 text-yellow-700 bg-yellow-50' :
                               'border-green-500 text-green-700 bg-green-50'
                             }`}
                           >
-                            {issue.priority === 'High' ? '🔴' : issue.priority === 'Medium' ? '🟡' : '🟢'} {issue.priority} Priority
+                            {issue.priority === 'very_urgent' ? '🔴' : issue.priority === 'urgent' ? '🟡' : '🟢'} {issue.priority.replace('_', ' ')}
                           </Badge>
                         )}
                         {issue.severity && (
@@ -235,12 +239,6 @@ export default function AdminPage() {
                     <div className="bg-white/70 rounded-lg p-4 border border-blue-100">
                       <h3 className="text-sm font-semibold text-gray-600 mb-1">Priority</h3>
                       <Badge variant="outline" className="text-sm">{issueDetails.priority}</Badge>
-                    </div>
-                  )}
-                  {issueDetails.department && (
-                    <div className="bg-white/70 rounded-lg p-4 border border-blue-100">
-                      <h3 className="text-sm font-semibold text-gray-600 mb-1">Department</h3>
-                      <p className="text-gray-700 text-sm">{issueDetails.department}</p>
                     </div>
                   )}
                 </div>

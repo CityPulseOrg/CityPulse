@@ -56,7 +56,6 @@ export default function IssuePage({ params }: PageProps) {
           <p><strong>Description:</strong> {issue.description}</p>
           {issue.category && <p><strong>Category:</strong> {issue.category}</p>}
           {issue.priority && <p><strong>Priority:</strong> {issue.priority}</p>}
-          {issue.department && <p><strong>Department:</strong> {issue.department}</p>}
 
           {issue.images && issue.images.length > 0 && (
             <div>

@@ -16,12 +16,35 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.ai_workflow.workflow import run_backboard_ai, ai_followup
 from app.database import get_db, engine
-from app.schemas import ReportInDB, ReportResponse, Report, ReportUpdate, ReportFollowup
+from app.schemas import ReportInDB, ReportResponse, Report, ReportUpdate, ReportFollowup, ClarificationQuestion
+import re
 from app.validators import validate_images
 
 logger = logging.getLogger(__name__)
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def parse_clarification_to_questions(clarification: Optional[str]) -> Optional[List[dict]]:
+    """Parse clarification string into structured questions."""
+    if not clarification:
+        return None
+
+    questions = []
+    # Split by newlines or question marks followed by space
+    lines = re.split(r'\?[\s\n]+|\n+', clarification)
+
+    for i, line in enumerate(lines):
+        line = line.strip()
+        if line and len(line) > 5:  # Skip very short fragments
+            questions.append({
+                "id": f"q{i+1}",
+                "question": line + ("?" if not line.endswith("?") else ""),
+                "type": "text",
+                "choices": None
+            })
+
+    return questions if questions else None
 
 
 def transform_to_response(report: ReportInDB, base_url: str) -> ReportResponse:
@@ -32,7 +55,10 @@ def transform_to_response(report: ReportInDB, base_url: str) -> ReportResponse:
             {"id": filename.split('_')[0], "url": f"{base_url}/uploads/{filename}"}
             for filename in report.report_images
         ]
-    
+
+    # Parse clarification into structured questions
+    clarification_questions = parse_clarification_to_questions(report.clarification)
+
     return ReportResponse(
         id=report.id,
         title=report.title,
@@ -40,7 +66,7 @@ def transform_to_response(report: ReportInDB, base_url: str) -> ReportResponse:
         status=report.status,
         latitude=report.latitude,
         longitude=report.longitude,
-        report_images=images,
+        images=images,
         thread_id=report.thread_id,
         category=report.category,
         severity=report.severity,
@@ -48,6 +74,7 @@ def transform_to_response(report: ReportInDB, base_url: str) -> ReportResponse:
         priority_score=report.priority_score,
         needs_clarification=report.needs_clarification,
         clarification=report.clarification,
+        clarification_questions=clarification_questions,
         number_of_matches=report.number_of_matches,
         creation_time=report.creation_time,
         updated_at=report.updated_at,
@@ -137,11 +164,12 @@ async def create_report(
     description: str = Form(...),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
-    issue_images: List[UploadFile] = File(...),
+    issue_images: List[UploadFile] = File(default=[]),
     db: Session = Depends(get_db),
 ):
     """Create a new report."""
-    validate_images(issue_images)
+    if issue_images:
+        validate_images(issue_images)
     saved_filenames = []
     for file in issue_images:
         contents = await file.read()
