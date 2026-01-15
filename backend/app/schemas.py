@@ -123,6 +123,29 @@ class ReportResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
+
+class ReportResponse(BaseModel):
+    """Report response with transformed image URLs."""
+    id: UUID
+    title: str
+    description: str
+    status: ReportStatus
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    report_images: Optional[List[ImageResponse]] = None
+    thread_id: Optional[str] = None
+    category: Optional[ClassificationEnum] = None
+    severity: Optional[SeverityEnum] = None
+    priority: Optional[PriorityEnum] = None
+    priority_score: Optional[int] = None
+    needs_clarification: Optional[bool] = None
+    clarification: Optional[str] = None
+    number_of_matches: int = 0
+    creation_time: datetime
+    updated_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
+
 class ReportEvent(BaseModel):
     event_type: str
     payload: Optional[str] = None
