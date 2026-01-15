@@ -29,7 +29,10 @@ UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def parse_clarification_to_questions(clarification: Optional[str]) -> Optional[List[dict]]:
+def parse_clarification_to_questions(
+    clarification: Optional[str],
+    has_images: bool = True,
+) -> Optional[List[dict]]:
     """Parse clarification string into structured questions.
     
     Limits to maximum 3 most important questions to avoid overwhelming users.
@@ -46,8 +49,8 @@ def parse_clarification_to_questions(clarification: Optional[str]) -> Optional[L
         # Skip very short fragments and unhelpful questions
         if line and len(line) > 5:
             line_lower = line.lower()
-            # Skip photo/image related questions since users already uploaded images
-            if "photo" in line_lower or "image" in line_lower or "picture" in line_lower:
+            # Skip photo/image related questions only when users already uploaded images
+            if has_images and ("photo" in line_lower or "image" in line_lower or "picture" in line_lower):
                 continue
             # Skip redundant/obvious questions
             if "how many" in line_lower and ("affect" in line_lower or "light" in line_lower or "impact" in line_lower):
@@ -77,7 +80,10 @@ def transform_to_response(report: ReportInDB, base_url: str) -> ReportResponse:
         ]
 
     # Parse clarification into structured questions
-    clarification_questions = parse_clarification_to_questions(report.clarification)
+    clarification_questions = parse_clarification_to_questions(
+        report.clarification,
+        has_images=bool(report.report_images),
+    )
     events = list(report.events or []) if hasattr(report, "events") else None
 
     return ReportResponse(
@@ -310,7 +316,10 @@ async def make_followup(
     )
     
     # Include the user's clarification answers in the message sent back to the AI
-    questions = parse_clarification_to_questions(report.clarification)
+    questions = parse_clarification_to_questions(
+        report.clarification,
+        has_images=bool(report.report_images),
+    )
     question_map = {q["id"]: q["question"] for q in questions or []}
     answer_lines = []
     for key, value in clarification_answers.items():

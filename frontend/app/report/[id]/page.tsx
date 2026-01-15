@@ -44,6 +44,7 @@ export default function IssuePage({ params }: PageProps) {
   if (isLoading) return <div>Loading...</div>
   if (isError) return <div>Error loading the issue. Please try again.</div>
   if (!issue) return <div>Issue not found</div>
+  const hasClarificationQuestions = (issue.clarification_questions?.length ?? 0) > 0
 
   return (
     <div className="container mx-auto p-4">
@@ -69,7 +70,7 @@ export default function IssuePage({ params }: PageProps) {
             </div>
           )}
 
-          {issue.needs_clarification && issue.clarification_questions && issue.clarification_questions.length > 0 && (
+          {hasClarificationQuestions && (
             <Card>
               <CardHeader>
                 <CardTitle>Additional Information Needed</CardTitle>
