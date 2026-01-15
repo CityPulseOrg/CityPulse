@@ -115,6 +115,7 @@ class ReportResponse(BaseModel):
     needs_clarification: Optional[bool] = None
     clarification: Optional[str] = None
     clarification_questions: Optional[List[ClarificationQuestion]] = None
+    events: Optional[List["ReportEventInDB"]] = None
     number_of_matches: int = 0
     address: Optional[str] = None
     creation_time: datetime
@@ -136,6 +137,8 @@ class ReportEventInDB(ReportEvent):
 class ReportEventList(ReportInDB):
     events: List[ReportEventInDB] = []
 
+ReportResponse.model_rebuild()
+
 
 # ---- Aliases for Issue-based API (CityPulse v1) ----
 
@@ -145,8 +148,6 @@ class ReportCreate(Report):
 
 class IssueOut(ReportInDB):
     pass
-
-
 
 
 

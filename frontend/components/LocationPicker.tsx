@@ -38,6 +38,7 @@ export default function LocationPicker({ lat, lng, onLocationChange }: LocationP
   const [hoveredLocation, setHoveredLocation] = useState<[number, number] | null>(null)
   const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null)
   const [isMapReady, setIsMapReady] = useState(false)
+  const [isLocationReady, setIsLocationReady] = useState(false)
 
   // Default to a central location if no coordinates provided
   const defaultCenter: [number, number] = [45.485498, -73.610675] // MTL REPRESENT BABY
@@ -65,6 +66,31 @@ export default function LocationPicker({ lat, lng, onLocationChange }: LocationP
       document.head.removeChild(link)
     }
   }, [])
+
+  useEffect(() => {
+    const hasProvidedLocation = typeof lat === 'number' && typeof lng === 'number'
+    if (hasProvidedLocation) {
+      setIsLocationReady(true)
+      return
+    }
+
+    if (!navigator.geolocation) {
+      setIsLocationReady(true)
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords
+        setCurrentLocation([latitude, longitude])
+        setIsLocationReady(true)
+      },
+      (error) => {
+        console.error('Error getting location:', error)
+        setIsLocationReady(true)
+      }
+    )
+  }, [lat, lng])
 
   const handleMapClick = (e: any) => {
     const { lat, lng } = e.latlng
@@ -103,7 +129,7 @@ export default function LocationPicker({ lat, lng, onLocationChange }: LocationP
     return `${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}`
   }
 
-  if (!isMapReady) {
+  if (!isMapReady || !isLocationReady) {
     return (
       <Card className="w-full">
         <CardContent className="p-4">

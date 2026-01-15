@@ -78,6 +78,7 @@ def transform_to_response(report: ReportInDB, base_url: str) -> ReportResponse:
 
     # Parse clarification into structured questions
     clarification_questions = parse_clarification_to_questions(report.clarification)
+    events = list(report.events or []) if hasattr(report, "events") else None
 
     return ReportResponse(
         id=report.id,
@@ -95,6 +96,7 @@ def transform_to_response(report: ReportInDB, base_url: str) -> ReportResponse:
         needs_clarification=report.needs_clarification,
         clarification=report.clarification,
         clarification_questions=clarification_questions,
+        events=events,
         number_of_matches=report.number_of_matches,
         address=report.address,
         creation_time=report.creation_time,
@@ -364,6 +366,9 @@ async def make_followup(
             raise HTTPException(status_code=404, detail="Report not found after update")
     else:
         logger.warning("AI followup returned empty result for report %s", report_id)
+        report = crud.get_report(db=db, report_id=report_id)
+        if not report:
+            raise HTTPException(status_code=404, detail="Report not found")
 
     base_url = str(request.base_url).rstrip("/")
     return transform_to_response(report, base_url)

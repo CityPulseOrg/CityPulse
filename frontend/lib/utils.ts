@@ -11,3 +11,10 @@ export function formatCategory(category: string): string {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ')
 }
+
+export function formatPriority(priority: string): string {
+  return priority
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}

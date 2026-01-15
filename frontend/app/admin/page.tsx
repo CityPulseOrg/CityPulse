@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Label } from '@/components/ui/label'
-import { formatCategory } from '@/lib/utils'
+import { formatCategory, formatPriority } from '@/lib/utils'
 
 export default function AdminPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -104,11 +104,15 @@ export default function AdminPage() {
                 <SelectItem value="all">All Categories</SelectItem>
                 <SelectItem value="pothole">🕳️ Pothole</SelectItem>
                 <SelectItem value="broken_streetlight">💡 Broken Streetlight</SelectItem>
-                <SelectItem value="illegal_graffiti">🎨 Graffiti</SelectItem>
-                <SelectItem value="excessive_dumping">🗑️ Illegal Dumping</SelectItem>
-                <SelectItem value="vandalism">🔨 Vandalism</SelectItem>
                 <SelectItem value="broken_street_sign">🚧 Broken Sign</SelectItem>
+                <SelectItem value="excessive_dumping">🗑️ Illegal Dumping</SelectItem>
+                <SelectItem value="illegal_graffiti">🎨 Graffiti</SelectItem>
+                <SelectItem value="vandalism">🔨 Vandalism</SelectItem>
                 <SelectItem value="overgrown_grass">🌿 Overgrown Grass</SelectItem>
+                <SelectItem value="unplowed_area">🚜 Unplowed Area</SelectItem>
+                <SelectItem value="icy_street">🧊 Icy Street</SelectItem>
+                <SelectItem value="icy_sidewalk">🧊 Icy Sidewalk</SelectItem>
+                <SelectItem value="malfunctioning_waterfountain">⛲ Malfunctioning Water Fountain</SelectItem>
                 <SelectItem value="other">📋 Other</SelectItem>
               </SelectContent>
             </Select>
@@ -173,7 +177,7 @@ export default function AdminPage() {
                               'border-green-500 text-green-700 bg-green-50'
                             }`}
                           >
-                            {issue.priority === 'very_urgent' ? '🔴' : issue.priority === 'urgent' ? '🟡' : '🟢'} {issue.priority.replace('_', ' ')}
+                            {issue.priority === 'very_urgent' ? '🔴' : issue.priority === 'urgent' ? '🟡' : '🟢'} {formatPriority(issue.priority)}
                           </Badge>
                         )}
                         {issue.severity && (
@@ -249,7 +253,7 @@ export default function AdminPage() {
                     {issueDetails.priority && (
                       <div className="bg-white/70 rounded-lg p-4 border border-blue-100">
                         <h3 className="text-sm font-semibold text-gray-600 mb-1">Priority</h3>
-                        <Badge variant="outline" className="text-sm">{issueDetails.priority}</Badge>
+                        <Badge variant="outline" className="text-sm">{formatPriority(issueDetails.priority)}</Badge>
                       </div>
                     )}
                   </div>

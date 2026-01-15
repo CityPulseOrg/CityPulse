@@ -212,7 +212,8 @@ def update_report_with_ai_response(
     if ai_response.get("needs_clarification") is True:
         report.status = "Waiting for user follow-up"
     elif ai_response.get("needs_clarification") is False:
-        report.status = "New"
+        if report.status in (None, "", "Waiting for user follow-up"):
+            report.status = "New"
 
     try:
         db.commit()
@@ -289,4 +290,3 @@ def delete_report(db: Session, report_id: Union[str, UUID]) -> bool:
         raise
 
     return True
-
