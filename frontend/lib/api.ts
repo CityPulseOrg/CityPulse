@@ -49,7 +49,7 @@ export async function followupIssue(id: string, answers: { [key: string]: string
   return res.json();
 }
 
-export async function updateIssueStatus(id: string, status: string): Promise<void> {
+export async function updateIssueStatus(id: string, status: import('./types').ReportStatus): Promise<void> {
   const res = await fetch(`${API_BASE}/reports/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
