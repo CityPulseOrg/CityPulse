@@ -1,3 +1,12 @@
+// Status values matching backend ReportStatus enum
+export type ReportStatus = "New" | "In Progress" | "Resolved" | "Waiting for user follow-up";
+
+// Priority values matching backend
+export type ReportPriority = "not_urgent" | "urgent" | "very_urgent" | "Low" | "Medium" | "High";
+
+// Severity values matching backend
+export type ReportSeverity = "very_low" | "low" | "medium" | "high" | "very_high" | "Critical";
+
 export interface ClarificationQuestion {
   id: string;
   question: string;
@@ -10,9 +19,17 @@ export interface Image {
   url: string;
 }
 
+export interface ReportEvent {
+  id: string;
+  report_id: string;
+  event_type: string;
+  payload?: string;
+  creation_time: string;
+}
+
 export interface CreateIssueResponse {
   id: string;
-  status: string;
+  status: ReportStatus;
   title?: string;
   clarification_questions?: ClarificationQuestion[];
   images?: Image[];
@@ -20,7 +37,7 @@ export interface CreateIssueResponse {
 
 export interface IssueDetails {
   id: string;
-  status: string;
+  status: ReportStatus;
   title?: string;
   description: string;
   category?: string;
@@ -29,7 +46,7 @@ export interface IssueDetails {
   department?: string;
   images: Image[];
   clarification_questions?: ClarificationQuestion[];
-  events?: any[];
+  events?: ReportEvent[];
 }
 
 export interface FollowupRequest {
@@ -37,5 +54,6 @@ export interface FollowupRequest {
 }
 
 export interface UpdateStatusRequest {
-  status: string;
+  report_id: string;
+  status: ReportStatus;
 }

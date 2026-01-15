@@ -113,6 +113,30 @@ Notes:
 - Hostnames: use `localhost` from your machine; use `db` from containers
 - Port: 5432 is published to the host by docker-compose
 
+## Database Migrations
+
+Database schema is managed with Alembic migrations. Migrations run automatically on container startup.
+
+**Key features:**
+- ✅ Automatic schema creation on first run
+- ✅ Startup DB connection test (fails fast if DB is broken)
+- ✅ Migration history tracking
+
+For detailed migration commands and troubleshooting, see [backend/MIGRATIONS.md](backend/MIGRATIONS.md).
+
+### Quick commands
+
+```bash
+# Check current migration version
+docker-compose exec backend alembic current
+
+# View migration history
+docker-compose exec backend alembic history
+
+# Create a new migration after modifying models
+docker-compose exec backend alembic revision --autogenerate -m "description"
+```
+
 ## Architecture
 
 ```

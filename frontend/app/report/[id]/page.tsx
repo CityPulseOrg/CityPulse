@@ -49,7 +49,7 @@ export default function IssuePage({ params }: PageProps) {
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
           <CardTitle>Issue #{issue.id}</CardTitle>
-          <Badge variant={issue.status === 'open' ? 'destructive' : 'default'}>{issue.status}</Badge>
+          <Badge variant={issue.status === 'New' ? 'destructive' : issue.status === 'In Progress' ? 'default' : issue.status === 'Waiting for user follow-up' ? 'outline' : 'secondary'}>{issue.status}</Badge>
         </CardHeader>
         <CardContent className="space-y-4">
           {issue.title && <h2 className="text-xl font-semibold">{issue.title}</h2>}

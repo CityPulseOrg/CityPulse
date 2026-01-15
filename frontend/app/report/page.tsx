@@ -40,14 +40,14 @@ export default function ReportPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files)
-      if (photos.length + files.length > 5) {
-        alert('Max 5 files')
+      if (photos.length + files.length > 3) {
+        alert('Max 3 files')
         return
       }
-      const validFiles = files.filter(file => file.size <= 5 * 1024 * 1024) // 5MB
+      const validFiles = files.filter(file => file.size <= 10 * 1024 * 1024) // 10MB
       const rejectedFiles = files.length - validFiles.length
       if (rejectedFiles > 0) {
-        alert(`${rejectedFiles} file(s) exceeded 5MB and were not added.`)
+        alert(`${rejectedFiles} file(s) exceeded 10MB and were not added.`)
       }
       setPhotos(prev => [...prev, ...validFiles.map(file => ({ id: crypto.randomUUID(), file }))])
     }
@@ -99,7 +99,7 @@ export default function ReportPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="photos">Photos (max 5, 5MB each)</Label>
+                <Label htmlFor="photos">Photos (max 3, 10MB each)</Label>
                 <Input
                   id="photos"
                   type="file"
