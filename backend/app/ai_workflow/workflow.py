@@ -56,7 +56,28 @@ def create_thread(assistant_id: str, api_key: str):
 
 # TODO: Make sure that Content-Type does not need to be defined and verify if requests lib will automatically set it
 # TODO: Need to finish the last part of the function
-def upload_information_to_thread(api_key: str, thread_id: str, description: str, latitude: Optional[float], longitude: Optional[float], image_files: List[UploadFile]):
+def upload_information_to_thread(
+    api_key: str,
+    thread_id: str,
+    description: str,
+    latitude: Optional[float],
+    longitude: Optional[float],
+    image_files: List[UploadFile] = None,
+    image_paths: List[str] = None,
+    number_of_matches: Optional[int] = None
+):
+    """Upload information to a Backboard thread.
+    
+    Args:
+        api_key: Backboard API key
+        thread_id: Thread ID
+        description: Report description
+        latitude: Report latitude
+        longitude: Report longitude
+        image_files: List of UploadFile objects (for initial report)
+        image_paths: List of file paths (for follow-up)
+        number_of_matches: Count of similar reports
+    """
     backboard_url = f"https://app.backboard.io/api/threads/{thread_id}/messages"
     headers = {
             # "Content-Type": "multipart/form-data",
@@ -66,6 +87,9 @@ def upload_information_to_thread(api_key: str, thread_id: str, description: str,
     if latitude is not None and longitude is not None:
         content.append(f"Latitude: {latitude}")
         content.append(f"Longitude: {longitude}")
+    if number_of_matches is not None:
+        content.append(f"Number of similar reports in database: {number_of_matches}")
+    
     data = {
             "content": "\n".join(content),
             "llm_provider": "openai",
@@ -78,11 +102,28 @@ def upload_information_to_thread(api_key: str, thread_id: str, description: str,
         }
 
     images_array = []
-    for file in image_files:
-        filename = file.filename or "image.jpg"
-        mimetype = getattr(file, "content_type", "image/jpeg")
-        file_object = file.file
-        images_array.append(("files", (filename, file_object, mimetype)))
+    
+    # Handle UploadFile objects (initial report)
+    if image_files:
+        for file in image_files:
+            filename = file.filename or "image.jpg"
+            mimetype = getattr(file, "content_type", "image/jpeg")
+            file_object = file.file
+            images_array.append(("files", (filename, file_object, mimetype)))
+    
+    # Handle file paths (follow-up)
+    if image_paths:
+        for path in image_paths:
+            try:
+                with open(path, "rb") as f:
+                    filename = os.path.basename(path)
+                    # Determine mimetype from extension
+                    ext = os.path.splitext(filename)[1].lower()
+                    mimetype = "image/jpeg" if ext in [".jpg", ".jpeg"] else "image/png" if ext == ".png" else "image/jpeg"
+                    file_content = f.read()
+                    images_array.append(("files", (filename, file_content, mimetype)))
+            except Exception as e:
+                logger.error(f"Failed to read image file {path}: {e}")
 
     resp = None
     try:
@@ -120,11 +161,32 @@ def get_assistant_response(api_key: str, thread_id: str, max_attempts: int = 8, 
             logger.error(f"Error parsing thread response as JSON: {e} | Response: {sanitize_api_key(resp.text, api_key)}")
             return {}
 
+        logger.info(f"Thread response on attempt {attempt}: {resp_json}")
         messages = resp_json.get("messages")
         if not messages:
+            logger.info(f"No messages in thread response on attempt {attempt}/{max_attempts}")
             return {}
         else:
             last_message = messages[- 1]
+            logger.info(f"Last message on attempt {attempt}: role={last_message.get('role')}, status={last_message.get('status')}")
+            
+            # Check if assistant has made tool calls (function analysis)
+            if last_message.get("role") == "assistant" and last_message.get("status") == "REQUIRES_ACTION":
+                metadata = last_message.get("metadata_", {})
+                tool_calls = metadata.get("tool_calls", [])
+                if tool_calls:
+                    # Extract the function arguments from the first tool call
+                    for tool_call in tool_calls:
+                        if tool_call.get("type") == "function":
+                            func_data = tool_call.get("function", {})
+                            arguments_str = func_data.get("arguments", "")
+                            if arguments_str:
+                                try:
+                                    return json.loads(arguments_str)
+                                except json.JSONDecodeError:
+                                    logger.error("Sorry, the json response from the assistant was invalid")
+                                    return {}
+            
             if last_message.get("role") == "assistant" and last_message.get("status") == "COMPLETED":
                 content = last_message.get("content")
                 if isinstance(content, str):
@@ -151,7 +213,14 @@ def get_assistant_response(api_key: str, thread_id: str, max_attempts: int = 8, 
 
     return {}
 
-def run_backboard_ai(description: str, latitude: Optional[float], longitude: Optional[float], image_files: List[UploadFile]):
+def run_backboard_ai(
+    description: str,
+    latitude: Optional[float],
+    longitude: Optional[float],
+    image_files: List[UploadFile],
+    number_of_matches: Optional[int] = None
+):
+    """Run the initial Backboard AI workflow for a new report."""
     api_key = os.environ.get("BACKBOARD_API_KEY")
     assistant_id = os.environ.get("ASSISTANT_ID")
     if not api_key or not assistant_id:
@@ -163,7 +232,15 @@ def run_backboard_ai(description: str, latitude: Optional[float], longitude: Opt
         if thread_id is None or creation_time is None:
             return None, None, {}
 
-        uploaded_data = upload_information_to_thread(api_key, thread_id, description, latitude, longitude, image_files)
+        uploaded_data = upload_information_to_thread(
+            api_key,
+            thread_id,
+            description,
+            latitude,
+            longitude,
+            image_files=image_files,
+            number_of_matches=number_of_matches
+        )
         if uploaded_data is None:
             return None, None, {}
 
@@ -173,7 +250,15 @@ def run_backboard_ai(description: str, latitude: Optional[float], longitude: Opt
         logger.error(f"Request failure in AI workflow: {e}")
         return None, None, {}
     
-def ai_followup(thread_id: str, description: str, latitude: Optional[float], longitude: Optional[float], image_files: List[UploadFile]):
+def ai_followup(
+    thread_id: str,
+    description: str,
+    latitude: Optional[float],
+    longitude: Optional[float],
+    image_paths: List[str] = None,
+    number_of_matches: Optional[int] = None
+):
+    """Run the AI follow-up workflow for an existing report thread."""
     api_key = os.environ.get("BACKBOARD_API_KEY")
     assistant_id = os.environ.get("ASSISTANT_ID")
     if not api_key or not assistant_id:
@@ -181,7 +266,15 @@ def ai_followup(thread_id: str, description: str, latitude: Optional[float], lon
         return {}
     
     try:
-        uploaded_data = upload_information_to_thread(api_key, thread_id, description, latitude, longitude, image_files)
+        uploaded_data = upload_information_to_thread(
+            api_key,
+            thread_id,
+            description,
+            latitude,
+            longitude,
+            image_paths=image_paths,
+            number_of_matches=number_of_matches
+        )
         if uploaded_data is None:
             return {}
         

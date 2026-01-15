@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Label } from '@/components/ui/label'
+import { formatCategory, formatPriority } from '@/lib/utils'
 
 export default function AdminPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -90,9 +91,9 @@ export default function AdminPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Priorities</SelectItem>
-                <SelectItem value="High">🔴 High Priority</SelectItem>
-                <SelectItem value="Medium">🟡 Medium Priority</SelectItem>
-                <SelectItem value="Low">🟢 Low Priority</SelectItem>
+                <SelectItem value="very_urgent">🔴 Very Urgent</SelectItem>
+                <SelectItem value="urgent">🟡 Urgent</SelectItem>
+                <SelectItem value="not_urgent">🟢 Not Urgent</SelectItem>
               </SelectContent>
             </Select>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
@@ -102,9 +103,17 @@ export default function AdminPage() {
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
                 <SelectItem value="pothole">🕳️ Pothole</SelectItem>
-                <SelectItem value="graffiti">🎨 Graffiti</SelectItem>
-                <SelectItem value="lighting">💡 Street Light</SelectItem>
-                <SelectItem value="trash">🗑️ Trash</SelectItem>
+                <SelectItem value="broken_streetlight">💡 Broken Streetlight</SelectItem>
+                <SelectItem value="broken_street_sign">🚧 Broken Sign</SelectItem>
+                <SelectItem value="excessive_dumping">🗑️ Illegal Dumping</SelectItem>
+                <SelectItem value="illegal_graffiti">🎨 Graffiti</SelectItem>
+                <SelectItem value="vandalism">🔨 Vandalism</SelectItem>
+                <SelectItem value="overgrown_grass">🌿 Overgrown Grass</SelectItem>
+                <SelectItem value="unplowed_area">🚜 Unplowed Area</SelectItem>
+                <SelectItem value="icy_street">🧊 Icy Street</SelectItem>
+                <SelectItem value="icy_sidewalk">🧊 Icy Sidewalk</SelectItem>
+                <SelectItem value="malfunctioning_waterfountain">⛲ Malfunctioning Water Fountain</SelectItem>
+                <SelectItem value="other">📋 Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -131,8 +140,8 @@ export default function AdminPage() {
                 <div
                   key={issue.id}
                   className={`bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer p-5 border-l-4 transform hover:-translate-y-1 ${
-                    issue.priority === 'High' ? 'border-red-500 hover:border-red-600' :
-                    issue.priority === 'Medium' ? 'border-yellow-500 hover:border-yellow-600' :
+                    issue.priority === 'very_urgent' ? 'border-red-500 hover:border-red-600' :
+                    issue.priority === 'urgent' ? 'border-yellow-500 hover:border-yellow-600' :
                     'border-blue-500 hover:border-purple-500'
                   }`}
                   onClick={() => setSelectedIssue(issue.id)}
@@ -148,6 +157,9 @@ export default function AdminPage() {
                           </>
                         )}
                       </div>
+                      {issue.address && (
+                        <p className="text-sm text-gray-600 mb-2">📍 {issue.address}</p>
+                      )}
                       <p className="text-gray-700 mb-4 leading-relaxed">{issue.description.slice(0, 120)}...</p>
                       <div className="flex gap-2 flex-wrap">
                         <Badge
@@ -160,21 +172,21 @@ export default function AdminPage() {
                           <Badge
                             variant="outline"
                             className={`text-xs px-3 py-1 font-semibold ${
-                              issue.priority === 'High' ? 'border-red-500 text-red-700 bg-red-50' :
-                              issue.priority === 'Medium' ? 'border-yellow-500 text-yellow-700 bg-yellow-50' :
+                              issue.priority === 'very_urgent' ? 'border-red-500 text-red-700 bg-red-50' :
+                              issue.priority === 'urgent' ? 'border-yellow-500 text-yellow-700 bg-yellow-50' :
                               'border-green-500 text-green-700 bg-green-50'
                             }`}
                           >
-                            {issue.priority === 'High' ? '🔴' : issue.priority === 'Medium' ? '🟡' : '🟢'} {issue.priority} Priority
+                            {issue.priority === 'very_urgent' ? '🔴' : issue.priority === 'urgent' ? '🟡' : '🟢'} {formatPriority(issue.priority)}
                           </Badge>
                         )}
                         {issue.severity && (
                           <Badge
                             variant="outline"
                             className={`text-xs px-3 py-1 ${
-                              issue.severity === 'Critical' ? 'border-red-600 text-red-800 bg-red-100' :
-                              issue.severity === 'High' ? 'border-orange-500 text-orange-700 bg-orange-50' :
-                              issue.severity === 'Medium' ? 'border-yellow-500 text-yellow-700 bg-yellow-50' :
+                              issue.severity === 'very_high' ? 'border-red-600 text-red-800 bg-red-100' :
+                              issue.severity === 'high' ? 'border-orange-500 text-orange-700 bg-orange-50' :
+                              issue.severity === 'medium' ? 'border-yellow-500 text-yellow-700 bg-yellow-50' :
                               'border-gray-500 text-gray-700 bg-gray-50'
                             }`}
                           >
@@ -183,7 +195,7 @@ export default function AdminPage() {
                         )}
                         {issue.category && (
                           <Badge variant="secondary" className="text-xs px-3 py-1 bg-blue-100 text-blue-800">
-                            {issue.category}
+                            {formatCategory(issue.category)}
                           </Badge>
                         )}
                       </div>
@@ -199,77 +211,79 @@ export default function AdminPage() {
         </div>
 
         <Sheet open={!!selectedIssue} onOpenChange={() => setSelectedIssue(null)}>
-          <SheetContent className="bg-gradient-to-br from-blue-50 to-purple-50 border-l border-blue-200">
-            <SheetHeader className="border-b border-blue-200 pb-4 mb-4">
+          <SheetContent className="bg-gradient-to-br from-blue-50 to-purple-50 border-l border-blue-200 flex flex-col">
+            <SheetHeader className="border-b border-blue-200 pb-4 mb-4 flex-shrink-0">
               <SheetTitle className="text-gray-800 text-xl flex items-center">
                 <div className="w-2 h-6 bg-blue-500 rounded-full mr-3"></div>
                 Issue #{selectedIssue}
               </SheetTitle>
             </SheetHeader>
-            {issueDetails && (
-              <div className="space-y-4">
-                {issueDetails.title && (
-                  <div className="bg-white/70 rounded-lg p-4 border border-blue-100">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Title</h3>
-                    <p className="text-gray-700">{issueDetails.title}</p>
-                  </div>
-                )}
-                <div className="bg-white/70 rounded-lg p-4 border border-blue-100">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Description</h3>
-                  <p className="text-gray-700 leading-relaxed">{issueDetails.description}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white/70 rounded-lg p-4 border border-blue-100">
-                    <h3 className="text-sm font-semibold text-gray-600 mb-1">Status</h3>
-                    <Badge variant={issueDetails.status === 'New' ? 'destructive' : issueDetails.status === 'In Progress' ? 'default' : issueDetails.status === 'Waiting for user follow-up' ? 'outline' : 'secondary'} className="text-sm">
-                      {issueDetails.status}
-                    </Badge>
-                  </div>
-                  {issueDetails.category && (
+            <div className="flex-1 overflow-y-auto">
+              {issueDetails && (
+                <div className="space-y-4 pr-4">
+                  {issueDetails.title && (
                     <div className="bg-white/70 rounded-lg p-4 border border-blue-100">
-                      <h3 className="text-sm font-semibold text-gray-600 mb-1">Category</h3>
-                      <Badge variant="secondary" className="text-sm">{issueDetails.category}</Badge>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-2">Title</h3>
+                      <p className="text-gray-700">{issueDetails.title}</p>
                     </div>
                   )}
-                  {issueDetails.priority && (
-                    <div className="bg-white/70 rounded-lg p-4 border border-blue-100">
-                      <h3 className="text-sm font-semibold text-gray-600 mb-1">Priority</h3>
-                      <Badge variant="outline" className="text-sm">{issueDetails.priority}</Badge>
-                    </div>
-                  )}
-                  {issueDetails.department && (
-                    <div className="bg-white/70 rounded-lg p-4 border border-blue-100">
-                      <h3 className="text-sm font-semibold text-gray-600 mb-1">Department</h3>
-                      <p className="text-gray-700 text-sm">{issueDetails.department}</p>
-                    </div>
-                  )}
-                </div>
-                {issueDetails.images && issueDetails.images.length > 0 && (
                   <div className="bg-white/70 rounded-lg p-4 border border-blue-100">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Images</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      {issueDetails.images.map((img) => (
-                        <img key={img.id} src={img.url} alt="Issue" className="w-full h-24 object-cover rounded-lg border border-gray-200" />
-                      ))}
-                    </div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Description</h3>
+                    <p className="text-gray-700 leading-relaxed">{issueDetails.description}</p>
                   </div>
-                )}
-                <div className="bg-white/70 rounded-lg p-4 border border-blue-100">
-                  <Label className="text-gray-800 font-semibold block mb-3">Update Status</Label>
-                  <Select value={issueDetails.status} onValueChange={handleStatusChange}>
-                    <SelectTrigger className="bg-white border-blue-200">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="New">🔴 New</SelectItem>
-                      <SelectItem value="In Progress">🟡 In Progress</SelectItem>
-                      <SelectItem value="Resolved">🟢 Resolved</SelectItem>
-                      <SelectItem value="Waiting for user follow-up">🟠 Waiting for Follow-up</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {issueDetails.address && (
+                    <div className="bg-white/70 rounded-lg p-4 border border-blue-100">
+                      <h3 className="text-sm font-semibold text-gray-600 mb-1">Location</h3>
+                      <p className="text-gray-700 text-sm">📍 {issueDetails.address}</p>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white/70 rounded-lg p-4 border border-blue-100">
+                      <h3 className="text-sm font-semibold text-gray-600 mb-1">Status</h3>
+                      <Badge variant={issueDetails.status === 'New' ? 'destructive' : issueDetails.status === 'In Progress' ? 'default' : issueDetails.status === 'Waiting for user follow-up' ? 'outline' : 'secondary'} className="text-sm">
+                        {issueDetails.status}
+                      </Badge>
+                    </div>
+                    {issueDetails.category && (
+                      <div className="bg-white/70 rounded-lg p-4 border border-blue-100">
+                        <h3 className="text-sm font-semibold text-gray-600 mb-1">Category</h3>
+                        <Badge variant="secondary" className="text-sm">{formatCategory(issueDetails.category)}</Badge>
+                      </div>
+                    )}
+                    {issueDetails.priority && (
+                      <div className="bg-white/70 rounded-lg p-4 border border-blue-100">
+                        <h3 className="text-sm font-semibold text-gray-600 mb-1">Priority</h3>
+                        <Badge variant="outline" className="text-sm">{formatPriority(issueDetails.priority)}</Badge>
+                      </div>
+                    )}
+                  </div>
+                  {issueDetails.images && issueDetails.images.length > 0 && (
+                    <div className="bg-white/70 rounded-lg p-4 border border-blue-100">
+                      <h3 className="text-lg font-semibold text-gray-800 mb-3">Images</h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        {issueDetails.images.map((img) => (
+                          <img key={img.id} src={img.url} alt="Issue" className="w-full h-24 object-cover rounded-lg border border-gray-200" />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div className="bg-white/70 rounded-lg p-4 border border-blue-100">
+                    <Label className="text-gray-800 font-semibold block mb-3">Update Status</Label>
+                    <Select value={issueDetails.status} onValueChange={handleStatusChange}>
+                      <SelectTrigger className="bg-white border-blue-200">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="New">🔴 New</SelectItem>
+                        <SelectItem value="In Progress">🟡 In Progress</SelectItem>
+                        <SelectItem value="Resolved">🟢 Resolved</SelectItem>
+                        <SelectItem value="Waiting for user follow-up">🟠 Waiting for Follow-up</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </SheetContent>
         </Sheet>
       </div>

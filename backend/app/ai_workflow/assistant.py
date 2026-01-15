@@ -93,9 +93,9 @@ def create_assistant():
                                               },
                                               "number_of_matches": {
                                                   "type": "number",
-                                                  "description": ("Recall how many reports were made about the exact same issue "
-                                                  "(ex: very similar latitude and longitude, similar images, etc), and give a number "
-                                                  "representing this amount, excluding the current report that is being analyzed.")
+                                                  "description": ("The count of similar reports provided in the message. "
+                                                  "Use the 'Number of similar reports in database' value from the input. "
+                                                  "This field is optional - the backend will use its calculated value if not provided.")
                                               }
                                           },
                                           "required": [
@@ -104,7 +104,6 @@ def create_assistant():
                                               "priority",
                                               "priority_score",
                                               "needs_clarification",
-                                              "number_of_matches",
                                           ],
                                           "if": {
                                               "properties": {

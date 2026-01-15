@@ -28,6 +28,7 @@ class IssueTable(Base):
 
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
+    address = Column(String, nullable=True)
     report_images = Column(ARRAY(String), nullable=True, default=[])
 
     # AI-enriched fields

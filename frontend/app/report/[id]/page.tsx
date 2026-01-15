@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { ClarificationQuestion } from '@/lib/types'
+import { formatCategory, formatPriority } from '@/lib/utils'
 
 type PageProps =  {
   params: Promise<{ id: string }>
@@ -43,6 +44,7 @@ export default function IssuePage({ params }: PageProps) {
   if (isLoading) return <div>Loading...</div>
   if (isError) return <div>Error loading the issue. Please try again.</div>
   if (!issue) return <div>Issue not found</div>
+  const hasClarificationQuestions = (issue.clarification_questions?.length ?? 0) > 0
 
   return (
     <div className="container mx-auto p-4">
@@ -54,9 +56,8 @@ export default function IssuePage({ params }: PageProps) {
         <CardContent className="space-y-4">
           {issue.title && <h2 className="text-xl font-semibold">{issue.title}</h2>}
           <p><strong>Description:</strong> {issue.description}</p>
-          {issue.category && <p><strong>Category:</strong> {issue.category}</p>}
-          {issue.priority && <p><strong>Priority:</strong> {issue.priority}</p>}
-          {issue.department && <p><strong>Department:</strong> {issue.department}</p>}
+          {issue.category && <p><strong>Category:</strong> {formatCategory(issue.category)}</p>}
+          {issue.priority && <p><strong>Priority:</strong> {formatPriority(issue.priority)}</p>}
 
           {issue.images && issue.images.length > 0 && (
             <div>
@@ -69,7 +70,7 @@ export default function IssuePage({ params }: PageProps) {
             </div>
           )}
 
-          {issue.clarification_questions && issue.clarification_questions.length > 0 && (
+          {hasClarificationQuestions && (
             <Card>
               <CardHeader>
                 <CardTitle>Additional Information Needed</CardTitle>
