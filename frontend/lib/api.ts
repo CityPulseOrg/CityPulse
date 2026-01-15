@@ -50,20 +50,20 @@ export async function followupIssue(id: string, answers: { [key: string]: string
 }
 
 export async function updateIssueStatus(id: string, status: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/v1/reports/${id}`, {
+  const res = await fetch(`${API_BASE}/reports/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ report_id: id, status }),
   });
   if (!res.ok) throw new Error('Failed to update status');
 }
 
 export async function getIssues(filters?: { status?: string; category?: string; priority?: string }): Promise<import('./types').IssueDetails[]> {
   const params = new URLSearchParams();
-  if (filters?.status) params.append('status', filters.status);
-  if (filters?.category) params.append('category', filters.category);
-  if (filters?.priority) params.append('priority', filters.priority);
-  const res = await fetch(`${API_BASE}/v1/reports?${params}`);
+  if (filters?.status) params.append('status_filter', filters.status);
+  if (filters?.category) params.append('category_filter', filters.category);
+  if (filters?.priority) params.append('priority_filter', filters.priority);
+  const res = await fetch(`${API_BASE}/reports?${params}`);
   if (!res.ok) throw new Error('Failed to get issues');
   return res.json();
 }

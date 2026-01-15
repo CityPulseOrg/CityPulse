@@ -77,9 +77,10 @@ export default function AdminPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="open">🔴 Open</SelectItem>
-                <SelectItem value="in_progress">🟡 In Progress</SelectItem>
-                <SelectItem value="resolved">🟢 Resolved</SelectItem>
+                <SelectItem value="New">🔴 New</SelectItem>
+                <SelectItem value="In Progress">🟡 In Progress</SelectItem>
+                <SelectItem value="Resolved">🟢 Resolved</SelectItem>
+                <SelectItem value="Waiting for user follow-up">🟠 Waiting for Follow-up</SelectItem>
               </SelectContent>
             </Select>
             <Select value={priorityFilter} onValueChange={setPriorityFilter}>
@@ -149,10 +150,10 @@ export default function AdminPage() {
                       <p className="text-gray-700 mb-4 leading-relaxed">{issue.description.slice(0, 120)}...</p>
                       <div className="flex gap-2 flex-wrap">
                         <Badge
-                          variant={issue.status === 'open' ? 'destructive' : issue.status === 'in_progress' ? 'default' : 'secondary'}
+                          variant={issue.status === 'New' ? 'destructive' : issue.status === 'In Progress' ? 'default' : issue.status === 'Waiting for user follow-up' ? 'outline' : 'secondary'}
                           className="text-xs px-3 py-1"
                         >
-                          {issue.status === 'in_progress' ? 'In Progress' : issue.status.charAt(0).toUpperCase() + issue.status.slice(1)}
+                          {issue.status}
                         </Badge>
                         {issue.priority && (
                           <Badge
@@ -219,7 +220,7 @@ export default function AdminPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-white/70 rounded-lg p-4 border border-blue-100">
                     <h3 className="text-sm font-semibold text-gray-600 mb-1">Status</h3>
-                    <Badge variant={issueDetails.status === 'open' ? 'destructive' : 'default'} className="text-sm">
+                    <Badge variant={issueDetails.status === 'New' ? 'destructive' : issueDetails.status === 'In Progress' ? 'default' : 'secondary'} className="text-sm">
                       {issueDetails.status}
                     </Badge>
                   </div>
@@ -259,9 +260,10 @@ export default function AdminPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="open">🔴 Open</SelectItem>
-                      <SelectItem value="in_progress">🟡 In Progress</SelectItem>
-                      <SelectItem value="resolved">🟢 Resolved</SelectItem>
+                      <SelectItem value="New">🔴 New</SelectItem>
+                      <SelectItem value="In Progress">🟡 In Progress</SelectItem>
+                      <SelectItem value="Resolved">🟢 Resolved</SelectItem>
+                      <SelectItem value="Waiting for user follow-up">🟠 Waiting for Follow-up</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

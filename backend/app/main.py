@@ -43,12 +43,20 @@ async def startup_event():
             "Database connection failed. Cannot start application."
         ) from exc
 
-# TODO: tighten origins/methods/headers for prod
+# CORS configuration - uses CORS_ORIGINS env var (comma-separated) or defaults for development
+cors_origins_env = os.environ.get("CORS_ORIGINS", "")
+if cors_origins_env:
+    cors_origins = [origin.strip() for origin in cors_origins_env.split(",")]
+else:
+    # Development defaults
+    cors_origins = ["http://localhost:3000", "http://127.0.0.1:3000", "http://frontend:3000"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 
