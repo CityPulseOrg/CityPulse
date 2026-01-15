@@ -33,10 +33,10 @@ export default function ChatWidget() {
       return "The admin dashboard allows city staff to view, filter, and manage reported issues. Use the filters to find specific types of problems.";
     }
     if (lowerQuestion.includes("status")) {
-      return "Issue statuses include: Open (new reports), In Progress (being worked on), and Resolved (fixed). Admins can update these in the dashboard.";
+      return "Issue statuses include: New (newly reported), In Progress (being worked on), Resolved (fixed), and Waiting for user follow-up (needs more info). Admins can update these in the dashboard.";
     }
     if (lowerQuestion.includes("filter")) {
-      return "Use the dropdown filters in the admin dashboard to view issues by status (Open/In Progress/Resolved) or category (Potholes, Graffiti, etc.).";
+      return "Use the dropdown filters in the admin dashboard to view issues by status (New/In Progress/Resolved/Waiting for follow-up) or category (Potholes, Graffiti, etc.).";
     }
     if (lowerQuestion.includes("ai") || lowerQuestion.includes("assistant")) {
       return "I'm an AI assistant here to help you navigate CityPulse! I can answer questions about reporting issues and general functionality. Feel free to write to me!";
