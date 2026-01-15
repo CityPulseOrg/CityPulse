@@ -77,7 +77,7 @@ export default function IssuePage({ params }: PageProps) {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleFollowupSubmit} className="space-y-4">
-                  {issue.clarification_questions.map((q: ClarificationQuestion) => (
+                  {(issue.clarification_questions ?? []).map((q: ClarificationQuestion) => (
                     <div key={q.id}>
                       <Label>{q.question}</Label>
                       {q.type === 'text' ? (
