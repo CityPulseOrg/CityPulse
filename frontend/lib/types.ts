@@ -5,7 +5,7 @@ export type ReportStatus = "New" | "In Progress" | "Resolved" | "Waiting for use
 export type ReportPriority = "not_urgent" | "urgent" | "very_urgent" | "Low" | "Medium" | "High";
 
 // Severity values matching backend
-export type ReportSeverity = "very_low" | "low" | "medium" | "high" | "very_high" | "Critical";
+export type ReportSeverity = "very_low" | "low" | "medium" | "high" | "very_high";
 
 export interface ClarificationQuestion {
   id: string;

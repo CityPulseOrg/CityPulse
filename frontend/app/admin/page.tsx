@@ -172,9 +172,9 @@ export default function AdminPage() {
                           <Badge
                             variant="outline"
                             className={`text-xs px-3 py-1 ${
-                              issue.severity === 'Critical' ? 'border-red-600 text-red-800 bg-red-100' :
-                              issue.severity === 'High' ? 'border-orange-500 text-orange-700 bg-orange-50' :
-                              issue.severity === 'Medium' ? 'border-yellow-500 text-yellow-700 bg-yellow-50' :
+                              issue.severity === 'very_high' ? 'border-red-600 text-red-800 bg-red-100' :
+                              issue.severity === 'high' ? 'border-orange-500 text-orange-700 bg-orange-50' :
+                              issue.severity === 'medium' ? 'border-yellow-500 text-yellow-700 bg-yellow-50' :
                               'border-gray-500 text-gray-700 bg-gray-50'
                             }`}
                           >
