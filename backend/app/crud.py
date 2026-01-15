@@ -154,12 +154,34 @@ def update_report(
 def update_report_with_ai_response(
     db: Session,
     report_id: Union[str, UUID],
-    ai_response: dict
+    ai_response: dict,
+    new_description: Optional[str] = None,
+    new_latitude: Optional[float] = None,
+    new_longitude: Optional[float] = None,
+    number_of_matches: Optional[int] = None
 ) -> Optional[models.IssueTable]:
-    """Update a report with AI-enriched fields from follow-up."""
+    """Update a report with AI-enriched fields from follow-up.
+
+    Args:
+        db: Database session
+        report_id: Report UUID
+        ai_response: AI response dictionary with enriched fields
+        new_description: Updated description from follow-up (if provided)
+        new_latitude: Updated latitude from follow-up (if provided)
+        new_longitude: Updated longitude from follow-up (if provided)
+        number_of_matches: Backend-calculated similar reports count (fallback if AI doesn't return it)
+    """
     report = get_report(db, report_id)
     if report is None:
         return None
+
+    # Update user-provided fields from follow-up
+    if new_description is not None:
+        report.description = new_description
+    if new_latitude is not None:
+        report.latitude = new_latitude
+    if new_longitude is not None:
+        report.longitude = new_longitude
 
     # Update AI-enriched fields from response
     if "classification" in ai_response:
@@ -174,9 +196,13 @@ def update_report_with_ai_response(
         report.needs_clarification = ai_response["needs_clarification"]
     if "clarification" in ai_response:
         report.clarification = ai_response["clarification"]
+
+    # Use AI's number_of_matches if provided, otherwise use backend-calculated value
     if "number_of_matches" in ai_response:
         report.number_of_matches = ai_response["number_of_matches"]
-    
+    elif number_of_matches is not None:
+        report.number_of_matches = number_of_matches
+
     # Keep status aligned with AI clarification state
     if ai_response.get("needs_clarification") is True:
         report.status = "Waiting for user follow-up"

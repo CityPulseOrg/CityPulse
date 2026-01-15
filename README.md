@@ -2,45 +2,204 @@
 
 AI-powered civic issue reporting system.
 
-## Quick Start
+## Quick Start (Docker)
+
+The fastest way to get CityPulse running:
 
 ```bash
-# 1. Copy environment file
+# 1. Clone the repository
+git clone https://github.com/CityPulseOrg/CityPulse.git
+cd CityPulse
+
+# 2. Copy and configure environment variables
 cp .env.example .env
+# Edit .env and add your Backboard API key (required)
 
-# 2. Edit .env and add your Backboard API credentials
-
-# 3. Run everything
+# 3. Start all services
 docker compose up --build
 ```
 
-## Environment Setup
+**Access the application:**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Documentation: http://localhost:8000/docs
 
-- Copy the example file and edit your values: `cp .env.example .env`
-- Variables used locally and in CI:
-   - POSTGRES_USER: database username (e.g., `citypulse`)
-   - POSTGRES_PASSWORD: database password (e.g., `citypulse`)
-   - POSTGRES_DB: database name (e.g., `citypulse`)
-   - DATABASE_URL: local-only connection (outside Docker): `postgresql://citypulse:citypulse@localhost:5432/citypulse`
-   - BACKBOARD_API_KEY: Backboard API key (secret)
-   - BACKBOARD_WORKFLOW_ID: optional Backboard workflow ID (if applicable)
-   - BACKBOARD_API_URL: Backboard API base URL (default `https://api.backboard.ai`)
-   - VITE_API_URL: frontend’s API base URL (e.g., `http://localhost:8000`)
+## Development Setup
 
-### GitHub Secrets (Actions → Secrets and variables → Actions)
+### Prerequisites
 
-Add these repository secrets so CI can verify and inject them:
-- POSTGRES_USER
-- POSTGRES_PASSWORD
-- POSTGRES_DB
-- BACKBOARD_API_KEY
-- VITE_API_URL
+- **Docker & Docker Compose** (recommended) OR
+- **For local development:**
+  - Python 3.11+
+  - Node.js 20+
+  - PostgreSQL 15+
 
-Recommendation:
-- Use the same values as your local `.env` for POSTGRES_* to keep consistency.
-- Set `VITE_API_URL` to `http://localhost:8000` for preview builds, or your deployed URL per environment.
+### Environment Configuration
 
-## Docker Commands
+1. **Copy the example environment file:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Edit `.env` and configure required variables:**
+
+   **Required:**
+   - `BACKBOARD_API_KEY`: Your Backboard AI API key ([get one here](https://backboard.ai))
+   
+   **Database (defaults work for Docker):**
+   - `POSTGRES_USER`: Database username (default: `citypulse`)
+   - `POSTGRES_PASSWORD`: Database password (change for production!)
+   - `POSTGRES_DB`: Database name (default: `citypulse`)
+   - `DATABASE_URL`: Connection string (for local dev: `postgresql://citypulse:PASSWORD@localhost:5432/citypulse`)
+   
+   **Optional:**
+   - `ASSISTANT_ID`: Backboard AI assistant ID (auto-created if not set)
+   - `BACKBOARD_API_URL`: API URL (default: `https://api.backboard.ai`)
+   - `CORS_ORIGINS`: Comma-separated allowed origins (empty = dev defaults)
+   - `DEBUG`: Enable debug mode (`true`/`false`)
+   - `NEXT_PUBLIC_API_BASE_URL`: Backend URL for frontend (default: `http://localhost:8000`)
+
+3. **Important notes:**
+   - Never commit `.env` to version control (already in `.gitignore`)
+   - For local development outside Docker, set `DATABASE_URL` to use `localhost:5432`
+   - For production, change `POSTGRES_PASSWORD` and restrict `CORS_ORIGINS`
+
+### Option 1: Docker Development (Recommended)
+
+**Advantages:** No need to install Python, Node.js, or PostgreSQL locally. Everything runs in containers.
+
+```bash
+# Start all services (database, backend, frontend)
+docker compose up --build
+
+# Run in background
+docker compose up -d --build
+
+# View logs
+docker compose logs -f
+
+# Stop all services
+docker compose down
+
+# Reset database (removes all data)
+docker compose down -v
+```
+
+### Option 2: Local Development
+
+Run services locally for faster iteration and debugging.
+
+#### Backend Setup
+
+1. **Install Python 3.11+** (check with `python --version`)
+
+2. **Create and activate virtual environment:**
+   ```bash
+   # Create virtual environment
+   python -m venv .venv
+   
+   # Activate (Linux/Mac)
+   source .venv/bin/activate
+   
+   # Activate (Windows)
+   .venv\Scripts\activate
+   ```
+
+3. **Install Python dependencies:**
+   ```bash
+   pip install -r backend/requirements.txt
+   ```
+
+4. **Ensure PostgreSQL is running locally** (or use Docker for just the database):
+   ```bash
+   # Option: Run only PostgreSQL in Docker
+   docker compose up -d db
+   ```
+
+5. **Update `.env`** to use localhost:
+   ```bash
+   DATABASE_URL=postgresql://citypulse:citypulse@localhost:5432/citypulse
+   ```
+
+6. **Run database migrations:**
+   ```bash
+   cd backend
+   alembic upgrade head
+   cd ..
+   ```
+
+7. **Start the backend:**
+   ```bash
+   # From repository root (so .env is loaded)
+   uvicorn backend.app.main:app --reload --port 8000
+   ```
+
+#### Frontend Setup
+
+1. **Install Node.js 20+** (check with `node --version`)
+
+2. **Install dependencies:**
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+3. **Start development server:**
+   ```bash
+   npm run dev
+   ```
+   
+   Frontend will be available at http://localhost:3000
+
+4. **Build for production:**
+   ```bash
+   npm run build
+   npm start
+   ```
+   
+   The build creates a standalone server at `.next/standalone/server.js` (used by Docker).
+
+### Verifying Your Setup
+
+1. **Check backend health:**
+   ```bash
+   curl http://localhost:8000/health
+   # Should return: {"status": "healthy", "database": "connected"}
+   ```
+
+2. **Check API documentation:**
+   Open http://localhost:8000/docs in your browser
+
+3. **Check frontend:**
+   Open http://localhost:3000 in your browser
+
+### Environment Variables Reference
+
+| Variable                    | Required | Default                      | Description                                |
+|-----------------------------|----------|------------------------------|--------------------------------------------|
+| `POSTGRES_USER`             | Yes      | `citypulse`                  | Database username                          |
+| `POSTGRES_PASSWORD`         | Yes      | (must set)                   | Database password                          |
+| `POSTGRES_DB`               | Yes      | `citypulse`                  | Database name                              |
+| `DATABASE_URL`              | Yes      | (auto in Docker)             | Full PostgreSQL connection string          |
+| `BACKBOARD_API_KEY`         | **Yes**  | (none)                       | Backboard AI API key                       |
+| `ASSISTANT_ID`              | No       | (empty)                      | Backboard assistant ID (auto-created)      |
+| `BACKBOARD_API_URL`         | No       | `https://api.backboard.ai`   | Backboard API base URL                     |
+| `CORS_ORIGINS`              | No       | (empty = dev defaults)       | Comma-separated allowed origins            |
+| `DEBUG`                     | No       | `false`                      | Enable debug mode                          |
+| `NEXT_PUBLIC_API_BASE_URL`  | No       | `http://localhost:8000`      | Backend API URL (frontend build-time var)  |
+
+### GitHub Secrets (CI/CD)
+
+For GitHub Actions to work, add these repository secrets:
+(`Settings` → `Secrets and variables` → `Actions` → `New repository secret`)
+
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_DB`
+- `BACKBOARD_API_KEY`
+- `NEXT_PUBLIC_API_BASE_URL` (e.g., `http://localhost:8000` for preview builds)
+
+## Docker Commands Reference
 
 ```bash
 # Start all services (with build)
@@ -74,28 +233,6 @@ docker compose up --build backend
 # Check running containers
 docker compose ps
 ```
-
-## Run Outside Docker (Local Dev)
-
-If you prefer to run the backend without Docker:
-
-```bash
-# 1) Ensure Postgres is running locally and .env is set
-cp .env.example .env
-# Verify DATABASE_URL points to localhost:5432
-
-# 2) Create a virtual environment and install deps
-python -m venv .venv
-source .venv/bin/activate
-pip install -r backend/requirements.txt
-
-# 3) Start the API from the repo root so .env is loaded
-uvicorn backend.app.main:app --reload --port 8000
-```
-
-Notes:
-- Running from the repo root ensures `.env` is picked up by the app settings.
-- Use `http://localhost:8000/health` to confirm DB connectivity.
 
 ## Services
 
@@ -235,13 +372,10 @@ When a report is created, the AI may determine that it `needs_clarification` and
    - Count is passed to AI to help with analysis
    - AI uses this to populate `number_of_matches` field
 
-## Environment Variables
+## Contributing
 
-| Variable              | Description                    |
-|-----------------------|--------------------------------|
-| POSTGRES_USER         | Database username              |
-| POSTGRES_PASSWORD     | Database password              |
-| POSTGRES_DB           | Database name                  |
-| BACKBOARD_API_KEY     | Backboard API key              |
-| ASSISTANT_ID          | Backboard assistant ID         |
-| VITE_API_URL          | Backend URL for frontend       |
+Contributions are welcome! Please open an issue or submit a pull request.
+
+## License
+
+See [LICENSE.txt](LICENSE.txt) for details.

@@ -14,12 +14,16 @@ class Settings(BaseSettings):
 
     # Backboard AI Integration
     backboard_api_key: str = "" 
-    backboard_workflow_id: str = ""
     backboard_api_url: str = "https://api.backboard.ai"
 
     # Application
     app_name: str = "CityPulse"
     debug: bool = False
+    
+    # CORS Configuration
+    # Comma-separated list of allowed origins
+    # Leave empty for development defaults (localhost:3000, etc.)
+    cors_origins: str = ""
 
     class Config:
         env_file = ".env"

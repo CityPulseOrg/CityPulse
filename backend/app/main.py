@@ -80,10 +80,13 @@ async def startup_event():
 # CORS configuration - uses CORS_ORIGINS env var (comma-separated) or defaults for development
 cors_origins_env = os.environ.get("CORS_ORIGINS", "")
 if cors_origins_env:
+    # Production: use explicit origins from environment
     cors_origins = [origin.strip() for origin in cors_origins_env.split(",")]
+    logger.info("CORS: Using configured origins: %s", cors_origins)
 else:
-    # Development defaults
+    # Development: allow localhost and Docker internal network
     cors_origins = ["http://localhost:3000", "http://127.0.0.1:3000", "http://frontend:3000"]
+    logger.info("CORS: Using development defaults (localhost:3000, frontend:3000)")
 
 app.add_middleware(
     CORSMiddleware,
@@ -237,12 +240,16 @@ async def make_followup(
     # Use follow-up description or fallback to original report description
     followup_description = clarification.get("description") or report.description
 
+    # Extract follow-up fields for persistence
+    followup_latitude = clarification.get("latitude")
+    followup_longitude = clarification.get("longitude")
+
     try:
         result = ai_followup(
             thread_id=report.thread_id,
             description=followup_description,
-            latitude=clarification.get("latitude"),
-            longitude=clarification.get("longitude"),
+            latitude=followup_latitude,
+            longitude=followup_longitude,
             image_paths=image_paths,
             number_of_matches=similar_count
         )
@@ -250,15 +257,21 @@ async def make_followup(
         logger.exception("Failed to process followup")
         raise HTTPException(status_code=500, detail="AI followup failed") from None
 
-    # Update report with AI response
+    # Update report with AI response and follow-up data
     if result:
         report = crud.update_report_with_ai_response(
             db=db,
             report_id=report_id,
-            ai_response=result
+            ai_response=result,
+            new_description=clarification.get("description"),
+            new_latitude=followup_latitude,
+            new_longitude=followup_longitude,
+            number_of_matches=similar_count
         )
         if not report:
             raise HTTPException(status_code=404, detail="Report not found after update")
+    else:
+        logger.warning("AI followup returned empty result for report %s", report_id)
 
     base_url = str(request.base_url).rstrip("/")
     return transform_to_response(report, base_url)
