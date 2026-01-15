@@ -45,6 +45,8 @@ export interface IssueDetails {
   priority?: string;
   severity?: string;
   address?: string;
+  department?: string;
+  needs_clarification?: boolean;
   images: Image[];
   clarification_questions?: ClarificationQuestion[];
   events?: ReportEvent[];

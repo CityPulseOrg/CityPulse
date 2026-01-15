@@ -6,6 +6,7 @@ import logging
 import uuid
 from typing import List, Optional
 from uuid import UUID
+from threading import Thread
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,6 +20,7 @@ from app.ai_workflow.workflow import run_backboard_ai, ai_followup
 from app.ai_workflow.assistant import create_assistant
 from app.database import get_db, engine
 from app.schemas import ReportInDB, ReportResponse, Report, ReportUpdate, ReportFollowup, ClarificationQuestion
+from app.background_tasks import clean_description_with_ai
 import re
 from app.validators import validate_images
 
@@ -28,7 +30,10 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def parse_clarification_to_questions(clarification: Optional[str]) -> Optional[List[dict]]:
-    """Parse clarification string into structured questions."""
+    """Parse clarification string into structured questions.
+    
+    Limits to maximum 3 most important questions to avoid overwhelming users.
+    """
     if not clarification:
         return None
 
@@ -38,13 +43,26 @@ def parse_clarification_to_questions(clarification: Optional[str]) -> Optional[L
 
     for i, line in enumerate(lines):
         line = line.strip()
-        if line and len(line) > 5:  # Skip very short fragments
+        # Skip very short fragments and unhelpful questions
+        if line and len(line) > 5:
+            line_lower = line.lower()
+            # Skip photo/image related questions since users already uploaded images
+            if "photo" in line_lower or "image" in line_lower or "picture" in line_lower:
+                continue
+            # Skip redundant/obvious questions
+            if "how many" in line_lower and ("affect" in line_lower or "light" in line_lower or "impact" in line_lower):
+                continue
+            
             questions.append({
-                "id": f"q{i+1}",
+                "id": f"q{len(questions)+1}",
                 "question": line + ("?" if not line.endswith("?") else ""),
                 "type": "text",
                 "choices": None
             })
+            
+            # Limit to 3 most important questions
+            if len(questions) >= 3:
+                break
 
     return questions if questions else None
 
@@ -249,6 +267,13 @@ async def create_report(
         logger.exception("Failed to persist report")
         raise HTTPException(status_code=500, detail="Failed to create report")
 
+    # Start background task to clean description (don't wait for completion)
+    Thread(
+        target=clean_description_with_ai,
+        args=(report_id, description),
+        daemon=True
+    ).start()
+
     base_url = str(request.base_url).rstrip("/")
     return transform_to_response(report, base_url)
 
@@ -263,6 +288,7 @@ async def make_followup(
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
     clarification_answers = answers.followup or {}
+    provided_description = clarification_answers.get("description")
     
     # Convert image filenames to full paths for AI workflow
     image_paths = []
@@ -286,6 +312,9 @@ async def make_followup(
     question_map = {q["id"]: q["question"] for q in questions or []}
     answer_lines = []
     for key, value in clarification_answers.items():
+        if key == "description":
+            # Avoid duplicating description in the answer context; it is handled separately
+            continue
         if value is None:
             continue
         value_str = str(value).strip()
@@ -297,9 +326,9 @@ async def make_followup(
         else:
             answer_lines.append(f"{key}: {value_str}")
 
-    followup_description = report.description
+    followup_description = provided_description or report.description
     if answer_lines:
-        followup_description = report.description + "\n\nUser clarification answers:\n" + "\n".join(answer_lines)
+        followup_description = followup_description + "\n\nUser clarification answers:\n" + "\n".join(answer_lines)
 
     # Extract follow-up fields for persistence and AI context
     followup_latitude = clarification_answers.get("latitude") or report.latitude

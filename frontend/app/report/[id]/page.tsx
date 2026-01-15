@@ -68,7 +68,7 @@ export default function IssuePage({ params }: PageProps) {
             </div>
           )}
 
-          {issue.clarification_questions && issue.clarification_questions.length > 0 && (
+          {issue.needs_clarification && issue.clarification_questions && issue.clarification_questions.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Additional Information Needed</CardTitle>

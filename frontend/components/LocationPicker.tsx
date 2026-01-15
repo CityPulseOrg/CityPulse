@@ -40,7 +40,7 @@ export default function LocationPicker({ lat, lng, onLocationChange }: LocationP
   const [isMapReady, setIsMapReady] = useState(false)
 
   // Default to a central location if no coordinates provided
-  const defaultCenter: [number, number] = [40.7128, -74.0060] // New York City
+  const defaultCenter: [number, number] = [45.485498, -73.610675] // MTL REPRESENT BABY
   const center = selectedLocation || currentLocation || defaultCenter
 
   useEffect(() => {
@@ -158,7 +158,7 @@ export default function LocationPicker({ lat, lng, onLocationChange }: LocationP
           <div className="h-64 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
             <MapContainer
               center={center}
-              zoom={13}
+              zoom={11}
               style={{ height: '100%', width: '100%' }}
             >
               <MapEventHandler onMapClick={handleMapClick} onMouseMove={handleMouseMove} />
