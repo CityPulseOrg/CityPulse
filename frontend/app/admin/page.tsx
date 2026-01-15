@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getIssues, updateIssueStatus, getIssue } from '@/lib/api'
+import { ReportStatus } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -32,7 +33,7 @@ export default function AdminPage() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) => updateIssueStatus(id, status),
+    mutationFn: ({ id, status }: { id: string; status: ReportStatus }) => updateIssueStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['issues'] })
       queryClient.invalidateQueries({ queryKey: ['issue', selectedIssue] })
@@ -41,7 +42,7 @@ export default function AdminPage() {
 
   const handleStatusChange = (status: string) => {
     if (selectedIssue) {
-      updateMutation.mutate({ id: selectedIssue, status })
+      updateMutation.mutate({ id: selectedIssue, status: status as ReportStatus })
     }
   }
 
