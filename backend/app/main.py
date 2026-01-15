@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.ai_workflow.workflow import run_backboard_ai, ai_followup
 from app.database import get_db, engine
-from app.schemas import ReportInDB, Report, ReportUpdate, ReportFollowup
+from app.schemas import ReportInDB, ReportResponse, Report, ReportUpdate, ReportFollowup
 from app.validators import validate_images
 
 logger = logging.getLogger(__name__)
@@ -24,13 +24,34 @@ UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def add_image_urls(report, base_url: str):
-    """Transform report_images filenames to full URLs."""
+def transform_to_response(report: ReportInDB, base_url: str) -> ReportResponse:
+    """Transform ReportInDB to ReportResponse with image objects."""
+    images = None
     if report.report_images:
-        report.report_images = [
-            f"{base_url}/uploads/{filename}" for filename in report.report_images
+        images = [
+            {"id": filename.split('_')[0], "url": f"{base_url}/uploads/{filename}"}
+            for filename in report.report_images
         ]
-    return report
+    
+    return ReportResponse(
+        id=report.id,
+        title=report.title,
+        description=report.description,
+        status=report.status,
+        latitude=report.latitude,
+        longitude=report.longitude,
+        report_images=images,
+        thread_id=report.thread_id,
+        category=report.category,
+        severity=report.severity,
+        priority=report.priority,
+        priority_score=report.priority_score,
+        needs_clarification=report.needs_clarification,
+        clarification=report.clarification,
+        number_of_matches=report.number_of_matches,
+        creation_time=report.creation_time,
+        updated_at=report.updated_at,
+    )
 
 app = FastAPI(title="CityPulse API", version="1.0.0")
 
@@ -106,7 +127,7 @@ def root():
     return {"message": "CityPulse API", "docs": "/docs"}
 
 
-@app.post("/reports", response_model=ReportInDB)
+@app.post("/reports", response_model=ReportResponse)
 async def create_report(
     request: Request,
     title: str = Form(...),
@@ -171,9 +192,9 @@ async def create_report(
         raise HTTPException(status_code=500, detail="Failed to create report")
 
     base_url = str(request.base_url).rstrip("/")
-    return add_image_urls(report, base_url)
+    return transform_to_response(report, base_url)
 
-@app.post("/reports/{report_id}/followup", response_model=ReportInDB)
+@app.post("/reports/{report_id}/followup", response_model=ReportResponse)
 def make_followup(
     request: Request,
     report_id: UUID,
@@ -198,10 +219,10 @@ def make_followup(
         raise HTTPException(status_code=500, detail="AI followup failed") from None
 
     base_url = str(request.base_url).rstrip("/")
-    return add_image_urls(report, base_url)
+    return transform_to_response(report, base_url)
 
 
-@app.get("/reports", response_model=List[ReportInDB])
+@app.get("/reports", response_model=List[ReportResponse])
 def list_reports(
     request: Request,
     status_filter: Optional[str] = None,
@@ -212,10 +233,10 @@ def list_reports(
     """List all reports with optional filtering."""
     reports = crud.get_reports(db=db, status_filter=status_filter, priority_filter=priority_filter, category_filter=category_filter)
     base_url = str(request.base_url).rstrip("/")
-    return [add_image_urls(report, base_url) for report in reports]
+    return [transform_to_response(report, base_url) for report in reports]
 
 
-@app.get("/reports/{report_id}", response_model=ReportInDB)
+@app.get("/reports/{report_id}", response_model=ReportResponse)
 def get_report(
     request: Request,
     report_id: UUID,
@@ -226,11 +247,11 @@ def get_report(
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
     base_url = str(request.base_url).rstrip("/")
-    return add_image_urls(report, base_url)
+    return transform_to_response(report, base_url)
 
 
 # TODO: add authentication middleware and role check
-@app.put("/reports/{report_id}", response_model=ReportInDB)
+@app.put("/reports/{report_id}", response_model=ReportResponse)
 def update_report(
     request: Request,
     report_id: UUID,
@@ -252,7 +273,7 @@ def update_report(
     if report is None:
         raise HTTPException(status_code=404, detail="Report not found")
     base_url = str(request.base_url).rstrip("/")
-    return add_image_urls(report, base_url)
+    return transform_to_response(report, base_url)
 
 
 @app.delete("/reports/{report_id}", status_code=204)
