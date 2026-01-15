@@ -220,7 +220,7 @@ export default function AdminPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-white/70 rounded-lg p-4 border border-blue-100">
                     <h3 className="text-sm font-semibold text-gray-600 mb-1">Status</h3>
-                    <Badge variant={issueDetails.status === 'New' ? 'destructive' : issueDetails.status === 'In Progress' ? 'default' : 'secondary'} className="text-sm">
+                    <Badge variant={issueDetails.status === 'New' ? 'destructive' : issueDetails.status === 'In Progress' ? 'default' : issueDetails.status === 'Waiting for user follow-up' ? 'outline' : 'secondary'} className="text-sm">
                       {issueDetails.status}
                     </Badge>
                   </div>
