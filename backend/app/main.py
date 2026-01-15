@@ -66,12 +66,6 @@ def health():
     Tries a trivial DB query; returns 503 if connection fails.
     """
     try:
-        # Import inline to avoid circulars during app startup
-        from sqlalchemy import create_engine, text
-        from app.config import get_settings
-
-        settings = get_settings()
-        engine = create_engine(settings.database_url, pool_pre_ping=True)
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
 
