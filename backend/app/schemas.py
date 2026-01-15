@@ -66,6 +66,7 @@ class Report(BaseModel):
     status: ReportStatus = ReportStatus.NEW
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    address: Optional[str] = None
     report_images: Optional[List[str]] = None
 
 class ReportStatusUpdate(BaseModel):
@@ -90,6 +91,7 @@ class ReportInDB(Report):
     needs_clarification: Optional[bool] = None
     clarification: Optional[str] = None
     number_of_matches: int = 0
+    address: Optional[str] = None
     creation_time: datetime
     updated_at: Optional[datetime] = None
 
@@ -114,6 +116,7 @@ class ReportResponse(BaseModel):
     clarification: Optional[str] = None
     clarification_questions: Optional[List[ClarificationQuestion]] = None
     number_of_matches: int = 0
+    address: Optional[str] = None
     creation_time: datetime
     updated_at: Optional[datetime] = None
 

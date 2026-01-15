@@ -33,6 +33,7 @@ export interface CreateIssueResponse {
   title?: string;
   clarification_questions?: ClarificationQuestion[];
   images?: Image[];
+  address?: string;
 }
 
 export interface IssueDetails {
@@ -43,6 +44,7 @@ export interface IssueDetails {
   category?: string;
   priority?: string;
   severity?: string;
+  address?: string;
   images: Image[];
   clarification_questions?: ClarificationQuestion[];
   events?: ReportEvent[];

@@ -14,6 +14,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app import crud
+from app.geocoding import reverse_geocode
 from app.ai_workflow.workflow import run_backboard_ai, ai_followup
 from app.ai_workflow.assistant import create_assistant
 from app.database import get_db, engine
@@ -77,6 +78,7 @@ def transform_to_response(report: ReportInDB, base_url: str) -> ReportResponse:
         clarification=report.clarification,
         clarification_questions=clarification_questions,
         number_of_matches=report.number_of_matches,
+        address=report.address,
         creation_time=report.creation_time,
         updated_at=report.updated_at,
     )
@@ -203,6 +205,9 @@ async def create_report(
     )
 
     report_id = uuid.uuid4()
+
+    # Resolve human-readable address from coordinates so AI doesn't re-ask
+    resolved_address = reverse_geocode(latitude, longitude)
     
     # Query for similar reports to pass count to AI
     similar_count = crud.get_similar_reports_count(
@@ -238,6 +243,7 @@ async def create_report(
             report_id=report_id,
             thread_id=thread_id,
             creation_time=creation_time,
+            address=resolved_address,
         )
     except Exception:
         logger.exception("Failed to persist report")
@@ -256,8 +262,7 @@ async def make_followup(
     report = crud.get_report(db=db, report_id=report_id)
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
-
-    clarification = answers.followup
+    clarification_answers = answers.followup or {}
     
     # Convert image filenames to full paths for AI workflow
     image_paths = []
@@ -271,17 +276,35 @@ async def make_followup(
     similar_count = crud.get_similar_reports_count(
         db=db,
         category=report.category,
-        latitude=clarification.get("latitude") or report.latitude,
-        longitude=clarification.get("longitude") or report.longitude,
+        latitude=clarification_answers.get("latitude") or report.latitude,
+        longitude=clarification_answers.get("longitude") or report.longitude,
         exclude_report_id=report_id
     )
     
-    # Use follow-up description or fallback to original report description
-    followup_description = clarification.get("description") or report.description
+    # Include the user's clarification answers in the message sent back to the AI
+    questions = parse_clarification_to_questions(report.clarification)
+    question_map = {q["id"]: q["question"] for q in questions or []}
+    answer_lines = []
+    for key, value in clarification_answers.items():
+        if value is None:
+            continue
+        value_str = str(value).strip()
+        if not value_str:
+            continue
+        question_text = question_map.get(key)
+        if question_text:
+            answer_lines.append(f"Q: {question_text} A: {value_str}")
+        else:
+            answer_lines.append(f"{key}: {value_str}")
 
-    # Extract follow-up fields for persistence
-    followup_latitude = clarification.get("latitude")
-    followup_longitude = clarification.get("longitude")
+    followup_description = report.description
+    if answer_lines:
+        followup_description = report.description + "\n\nUser clarification answers:\n" + "\n".join(answer_lines)
+
+    # Extract follow-up fields for persistence and AI context
+    followup_latitude = clarification_answers.get("latitude") or report.latitude
+    followup_longitude = clarification_answers.get("longitude") or report.longitude
+    followup_address = reverse_geocode(followup_latitude, followup_longitude)
 
     try:
         result = ai_followup(
@@ -302,10 +325,11 @@ async def make_followup(
             db=db,
             report_id=report_id,
             ai_response=result,
-            new_description=clarification.get("description"),
+            new_description=followup_description,
             new_latitude=followup_latitude,
             new_longitude=followup_longitude,
-            number_of_matches=similar_count
+            number_of_matches=similar_count,
+            new_address=followup_address
         )
         if not report:
             raise HTTPException(status_code=404, detail="Report not found after update")

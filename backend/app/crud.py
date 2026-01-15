@@ -41,7 +41,8 @@ def create_report(
         ai_response: dict,
         report_id: Union[str, UUID],
         thread_id: Union[str, UUID],
-        creation_time: Union[str, datetime]
+    creation_time: Union[str, datetime],
+    address: Optional[str] = None,
 ) -> models.IssueTable:
     # Coerce report_id to UUID (model column is UUID)
     coerced_report_id = _coerce_uuid(report_id)
@@ -68,6 +69,7 @@ def create_report(
         status=status,
         latitude=user_report.latitude,
         longitude=user_report.longitude,
+        address=address,
         report_images=user_report.report_images,
         thread_id=thread_id_str,
         category=ai_response.get("classification"),
@@ -158,7 +160,8 @@ def update_report_with_ai_response(
     new_description: Optional[str] = None,
     new_latitude: Optional[float] = None,
     new_longitude: Optional[float] = None,
-    number_of_matches: Optional[int] = None
+    number_of_matches: Optional[int] = None,
+    new_address: Optional[str] = None,
 ) -> Optional[models.IssueTable]:
     """Update a report with AI-enriched fields from follow-up.
 
@@ -182,6 +185,8 @@ def update_report_with_ai_response(
         report.latitude = new_latitude
     if new_longitude is not None:
         report.longitude = new_longitude
+    if new_address is not None:
+        report.address = new_address
 
     # Update AI-enriched fields from response
     if "classification" in ai_response:
