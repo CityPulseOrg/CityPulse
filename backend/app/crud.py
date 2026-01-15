@@ -177,8 +177,10 @@ def update_report_with_ai_response(
     if "number_of_matches" in ai_response:
         report.number_of_matches = ai_response["number_of_matches"]
     
-    # If clarification is no longer needed, update status
-    if not ai_response.get("needs_clarification", True):
+    # Keep status aligned with AI clarification state
+    if ai_response.get("needs_clarification") is True:
+        report.status = "Waiting for user follow-up"
+    elif ai_response.get("needs_clarification") is False:
         report.status = "New"
 
     try:
@@ -214,6 +216,10 @@ def get_similar_reports_count(
     Returns:
         Count of similar reports
     """
+    # If we have no category and no coordinates, avoid counting everything
+    if not category and (latitude is None or longitude is None):
+        return 0
+
     query = db.query(models.IssueTable)
     
     # Filter by category if provided
