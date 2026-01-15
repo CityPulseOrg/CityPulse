@@ -24,6 +24,8 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
+    volumes:
+      - uploads_data:/app/uploads
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-citypulse}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-citypulse}
@@ -57,3 +59,4 @@ services:
 
 volumes:
   postgres_data:
+  uploads_data:

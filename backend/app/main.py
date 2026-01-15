@@ -7,22 +7,56 @@ import uuid
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.ai_workflow.workflow import run_backboard_ai, ai_followup
 from app.database import get_db, engine
-from app.schemas import ReportInDB, Report, ReportUpdate, ReportFollowup
+from app.schemas import ReportInDB, ReportResponse, Report, ReportUpdate, ReportFollowup
 from app.validators import validate_images
 
 logger = logging.getLogger(__name__)
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
+
+def transform_to_response(report: ReportInDB, base_url: str) -> ReportResponse:
+    """Transform ReportInDB to ReportResponse with image objects."""
+    images = None
+    if report.report_images:
+        images = [
+            {"id": filename.split('_')[0], "url": f"{base_url}/uploads/{filename}"}
+            for filename in report.report_images
+        ]
+    
+    return ReportResponse(
+        id=report.id,
+        title=report.title,
+        description=report.description,
+        status=report.status,
+        latitude=report.latitude,
+        longitude=report.longitude,
+        report_images=images,
+        thread_id=report.thread_id,
+        category=report.category,
+        severity=report.severity,
+        priority=report.priority,
+        priority_score=report.priority_score,
+        needs_clarification=report.needs_clarification,
+        clarification=report.clarification,
+        number_of_matches=report.number_of_matches,
+        creation_time=report.creation_time,
+        updated_at=report.updated_at,
+    )
+
 app = FastAPI(title="CityPulse API", version="1.0.0")
+
+# Mount static files for serving uploaded images
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
 @app.on_event("startup")
@@ -93,8 +127,9 @@ def root():
     return {"message": "CityPulse API", "docs": "/docs"}
 
 
-@app.post("/reports", response_model=ReportInDB)
+@app.post("/reports", response_model=ReportResponse)
 async def create_report(
+    request: Request,
     title: str = Form(...),
     description: str = Form(...),
     latitude: Optional[float] = Form(None),
@@ -156,10 +191,12 @@ async def create_report(
         logger.exception("Failed to persist report")
         raise HTTPException(status_code=500, detail="Failed to create report")
 
-    return report
+    base_url = str(request.base_url).rstrip("/")
+    return transform_to_response(report, base_url)
 
-@app.post("/reports/{report_id}/followup", response_model=ReportInDB)
+@app.post("/reports/{report_id}/followup", response_model=ReportResponse)
 def make_followup(
+    request: Request,
     report_id: UUID,
     answers: ReportFollowup,
     db: Session = Depends(get_db)
@@ -167,7 +204,7 @@ def make_followup(
     report = crud.get_report(db=db, report_id=report_id)
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
-    
+
     clarification = answers.followup
     try:
         result = ai_followup(
@@ -180,23 +217,28 @@ def make_followup(
     except Exception:
         logger.exception("Failed to process followup")
         raise HTTPException(status_code=500, detail="AI followup failed") from None
-    
-    return report
+
+    base_url = str(request.base_url).rstrip("/")
+    return transform_to_response(report, base_url)
 
 
-@app.get("/reports", response_model=List[ReportInDB])
+@app.get("/reports", response_model=List[ReportResponse])
 def list_reports(
+    request: Request,
     status_filter: Optional[str] = None,
     priority_filter: Optional[str] = None,
     category_filter: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """List all reports with optional filtering."""
-    return crud.get_reports(db=db, status_filter=status_filter, priority_filter=priority_filter, category_filter=category_filter)
+    reports = crud.get_reports(db=db, status_filter=status_filter, priority_filter=priority_filter, category_filter=category_filter)
+    base_url = str(request.base_url).rstrip("/")
+    return [transform_to_response(report, base_url) for report in reports]
 
 
-@app.get("/reports/{report_id}", response_model=ReportInDB)
+@app.get("/reports/{report_id}", response_model=ReportResponse)
 def get_report(
+    request: Request,
     report_id: UUID,
     db: Session = Depends(get_db),
 ):
@@ -204,12 +246,14 @@ def get_report(
     report = crud.get_report(db=db, report_id=report_id)
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
-    return report
+    base_url = str(request.base_url).rstrip("/")
+    return transform_to_response(report, base_url)
 
 
 # TODO: add authentication middleware and role check
-@app.put("/reports/{report_id}", response_model=ReportInDB)
+@app.put("/reports/{report_id}", response_model=ReportResponse)
 def update_report(
+    request: Request,
     report_id: UUID,
     updated_report: ReportUpdate,
     db: Session = Depends(get_db),
@@ -228,7 +272,8 @@ def update_report(
 
     if report is None:
         raise HTTPException(status_code=404, detail="Report not found")
-    return report
+    base_url = str(request.base_url).rstrip("/")
+    return transform_to_response(report, base_url)
 
 
 @app.delete("/reports/{report_id}", status_code=204)
