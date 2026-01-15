@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.ai_workflow.workflow import run_backboard_ai, ai_followup
+from app.ai_workflow.assistant import create_assistant
 from app.database import get_db, engine
 from app.schemas import ReportInDB, ReportResponse, Report, ReportUpdate, ReportFollowup, ClarificationQuestion
 import re
@@ -88,7 +89,7 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 @app.on_event("startup")
 async def startup_event():
-    """Validate database connection on startup.
+    """Validate database connection and initialize AI assistant on startup.
     
     Fails fast if database is unreachable, preventing the app from
     starting in a broken state.
@@ -103,6 +104,16 @@ async def startup_event():
         raise RuntimeError(
             "Database connection failed. Cannot start application."
         ) from exc
+    
+    logger.info("Initializing Backboard AI assistant...")
+    try:
+        assistant_id = create_assistant()
+        if assistant_id:
+            logger.info("AI assistant initialized successfully: %s", assistant_id)
+        else:
+            logger.warning("AI assistant initialization failed - reports may not be processed correctly")
+    except Exception as exc:
+        logger.warning("Error during AI assistant initialization: %s", exc)
 
 # CORS configuration - uses CORS_ORIGINS env var (comma-separated) or defaults for development
 cors_origins_env = os.environ.get("CORS_ORIGINS", "")

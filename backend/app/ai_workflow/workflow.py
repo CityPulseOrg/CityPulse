@@ -161,11 +161,32 @@ def get_assistant_response(api_key: str, thread_id: str, max_attempts: int = 8, 
             logger.error(f"Error parsing thread response as JSON: {e} | Response: {sanitize_api_key(resp.text, api_key)}")
             return {}
 
+        logger.info(f"Thread response on attempt {attempt}: {resp_json}")
         messages = resp_json.get("messages")
         if not messages:
+            logger.info(f"No messages in thread response on attempt {attempt}/{max_attempts}")
             return {}
         else:
             last_message = messages[- 1]
+            logger.info(f"Last message on attempt {attempt}: role={last_message.get('role')}, status={last_message.get('status')}")
+            
+            # Check if assistant has made tool calls (function analysis)
+            if last_message.get("role") == "assistant" and last_message.get("status") == "REQUIRES_ACTION":
+                metadata = last_message.get("metadata_", {})
+                tool_calls = metadata.get("tool_calls", [])
+                if tool_calls:
+                    # Extract the function arguments from the first tool call
+                    for tool_call in tool_calls:
+                        if tool_call.get("type") == "function":
+                            func_data = tool_call.get("function", {})
+                            arguments_str = func_data.get("arguments", "")
+                            if arguments_str:
+                                try:
+                                    return json.loads(arguments_str)
+                                except json.JSONDecodeError:
+                                    logger.error("Sorry, the json response from the assistant was invalid")
+                                    return {}
+            
             if last_message.get("role") == "assistant" and last_message.get("status") == "COMPLETED":
                 content = last_message.get("content")
                 if isinstance(content, str):
