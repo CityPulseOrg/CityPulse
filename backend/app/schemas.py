@@ -45,6 +45,12 @@ class ReportStatus(str, Enum):
     WAITING = "Waiting for user follow-up"
 
 
+class ImageResponse(BaseModel):
+    """Image object returned in API responses."""
+    id: str
+    url: str
+
+
 # TODO: Verify if we need a separate status-update-only schema
 class Report(BaseModel):
     title: str
@@ -78,6 +84,7 @@ class ReportInDB(Report):
     number_of_matches: int = 0
     creation_time: datetime
     updated_at: Optional[datetime] = None
+    report_images: Optional[List[ImageResponse]] = None  # Override with URL objects
 
     model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
