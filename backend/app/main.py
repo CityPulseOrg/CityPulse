@@ -9,11 +9,12 @@ from uuid import UUID
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.ai_workflow.workflow import run_backboard_ai, ai_followup
-from app.database import get_db
+from app.database import get_db, engine
 from app.schemas import ReportInDB, Report, ReportUpdate, ReportFollowup
 from app.validators import validate_images
 
@@ -22,6 +23,25 @@ UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(title="CityPulse API", version="1.0.0")
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Validate database connection on startup.
+    
+    Fails fast if database is unreachable, preventing the app from
+    starting in a broken state.
+    """
+    logger.info("Validating database connection...")
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        logger.info("Database connection validated successfully")
+    except Exception as exc:
+        logger.error("Failed to connect to database on startup: %s", exc)
+        raise RuntimeError(
+            "Database connection failed. Cannot start application."
+        ) from exc
 
 # TODO: tighten origins/methods/headers for prod
 app.add_middleware(
@@ -114,12 +134,12 @@ async def create_report(
         )
         if thread_id is None or creation_time is None or ai_response == {}:
             logger.error("AI workflow returned an invalid response")
-            raise HTTPException(status_code=502, detail="AI workflow failed")
+            raise HTTPException(status_code=500, detail="AI workflow failed")
     except HTTPException:
         raise
     except Exception:
         logger.exception("Unexpected error in AI workflow")
-        raise HTTPException(status_code=502, detail="AI workflow failed") from None
+        raise HTTPException(status_code=500, detail="AI workflow failed") from None
 
     try:
         report = crud.create_report(
@@ -157,7 +177,7 @@ def make_followup(
         )
     except Exception:
         logger.exception("Failed to process followup")
-        raise HTTPException(status_code=502, detail="AI followup failed") from None
+        raise HTTPException(status_code=500, detail="AI followup failed") from None
     
     return report
 
